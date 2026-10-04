@@ -1,5 +1,3 @@
-import { useSyncExternalStore } from "react";
-
 /**
  * Theme + view-mode preferences. The inline INIT_SCRIPT sets both attributes on <html> before
  * first paint (no flash). Everything after that goes through apply*() so storage, the DOM
@@ -50,17 +48,4 @@ export function applyView(view: View) {
 
 export function toggleTheme() {
   applyTheme(readTheme() === "dark" ? "light" : "dark");
-}
-
-function subscribe(cb: () => void) {
-  window.addEventListener(PREFERENCES_EVENT, cb);
-  return () => window.removeEventListener(PREFERENCES_EVENT, cb);
-}
-
-/** Client hook. Server snapshot is the default so hydration matches; the real value arrives after mount. */
-export function useTheme(): Theme {
-  return useSyncExternalStore(subscribe, readTheme, () => DEFAULT_THEME);
-}
-export function useView(): View {
-  return useSyncExternalStore(subscribe, readView, () => DEFAULT_VIEW);
 }

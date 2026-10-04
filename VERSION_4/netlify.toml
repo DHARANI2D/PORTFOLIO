@@ -1,0 +1,27 @@
+# Netlify build settings. The site is a static export: `next build` writes ./out and
+# scripts/postbuild.mjs then adds the security headers next to it.
+
+[build]
+  command = "pnpm build"
+  publish = "out"
+
+[build.environment]
+  NODE_VERSION = "22"
+  # pnpm comes from the "packageManager" field in package.json; this pins the same version for
+  # Netlify's own detection. Keep the two in sync.
+  PNPM_VERSION = "10.28.0"
+  NEXT_TELEMETRY_DISABLED = "1"
+  # Set NEXT_PUBLIC_SITE_URL in the Netlify UI when the site has its own domain. It feeds the
+  # canonical URLs, sitemap, Open Graph tags and security.txt (see README.md).
+
+# Headers are NOT declared here. The Content-Security-Policy lists the sha256 of every inline
+# script of this particular build, so it cannot be written by hand: scripts/postbuild.mjs generates
+# out/_headers (CSP, HSTS, nosniff, Referrer-Policy, Permissions-Policy, COOP, X-Frame-Options,
+# long-lived cache for /_next/static/*) on every build, and Netlify applies that file.
+# Duplicating them in [[headers]] would risk two different policies on one response.
+
+# Netlify's post-processing (JS/CSS/HTML minify, bundling, image compression) rewrites
+# files after the build. Rewriting an inline script changes its hash and the page's CSP would then
+# block it. The export is already optimised, so post-processing stays off.
+[build.processing]
+  skip_processing = true

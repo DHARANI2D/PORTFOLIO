@@ -1,0 +1,151 @@
+name: Portfolio
+
+# Quality gates for VERSION_4 (the Next.js portfolio). Runs only when that folder, or this file,
+# changes. Nothing here deploys: hosting builds the site itself from the same commands.
+on:
+  push:
+    paths:
+      - "VERSION_4/**"
+      - ".github/workflows/portfolio.yml"
+  pull_request:
+    paths:
+      - "VERSION_4/**"
+      - ".github/workflows/portfolio.yml"
+  workflow_dispatch:
+
+# Least privilege: jobs can read the repository and nothing else. Artifacts and caches do not need
+# a token scope.
+permissions:
+  contents: read
+
+# A newer push to the same branch or PR replaces the run that is still going.
+concurrency:
+  group: portfolio-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: VERSION_4
+
+env:
+  NEXT_TELEMETRY_DISABLED: "1"
+
+jobs:
+  quality:
+    name: Lint, types, format, unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      # The pnpm version comes from "packageManager" in package.json.
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: VERSION_4/package.json
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: VERSION_4/pnpm-lock.yaml
+
+      # --frozen-lockfile: the lockfile is the record of what was reviewed. A change to it must be
+      # committed, never made silently by CI.
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm format:check
+      - run: pnpm test
+
+  build:
+    name: Build and verify headers
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: VERSION_4/package.json
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: VERSION_4/pnpm-lock.yaml
+
+      - run: pnpm install --frozen-lockfile
+
+      # next build, then scripts/postbuild.mjs (hashes inline scripts, writes out/_headers,
+      # out/headers.vercel.json and out/.well-known/security.txt, and fails on any problem).
+      - run: pnpm build
+
+      - name: Verify the generated headers
+        run: |
+          test -f out/_headers
+          test -f out/.well-known/security.txt
+          test -f out/headers.vercel.json
+          # No unsafe-inline or unsafe-eval in any script-src.
+          if grep -E "script-src[^;]*'unsafe-(inline|eval)'" out/_headers; then
+            echo "::error::script-src allows unsafe-inline or unsafe-eval"
+            exit 1
+          fi
+          # Every page has a policy holding the hash of each of its inline scripts, every baseline
+          # header is present, security.txt has not expired, and a committed vercel.json is not stale.
+          node scripts/postbuild.mjs --check
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: site
+          path: VERSION_4/out
+          # out/.well-known is a dot folder and is skipped by default.
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 7
+
+  e2e:
+    name: End-to-end (Playwright)
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: VERSION_4/package.json
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: VERSION_4/pnpm-lock.yaml
+
+      - run: pnpm install --frozen-lockfile
+
+      # The tests run against the exact export the build job produced.
+      - uses: actions/download-artifact@v4
+        with:
+          name: site
+          path: VERSION_4/out
+
+      - run: pnpm exec playwright install --with-deps chromium
+
+      # playwright.config.ts starts tests/e2e/static-server.mjs, which serves out/ with out/_headers.
+      - run: pnpm test:e2e
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: |
+            VERSION_4/playwright-report
+            VERSION_4/test-results
+          if-no-files-found: ignore
+          retention-days: 7

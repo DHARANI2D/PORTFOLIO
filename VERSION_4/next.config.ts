@@ -16,9 +16,6 @@ const nextConfig: NextConfig = {
   pageExtensions: ["ts", "tsx", "md", "mdx"],
   images: { unoptimized: true },
   poweredByHeader: false,
-  experimental: {
-    viewTransition: true,
-  },
 };
 
 const withMDX = createMDX({

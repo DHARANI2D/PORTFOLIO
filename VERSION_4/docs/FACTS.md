@@ -6,6 +6,7 @@ When in doubt, leave it out or write the sentence so it only claims what is list
 ## A. Verified (from the owner's live site or the owner's own messages)
 
 **Identity**
+
 - Name: Dharanidharan Senthilkumar. Goes by "Dharani". GitHub: `DHARANI2D`.
 - Based in India (state only "India"). Open to global roles.
 - Email: dharanidharan2d@gmail.com · LinkedIn: https://www.linkedin.com/in/dharanidharan-senthilkumar-b4244b232/ · GitHub: https://github.com/DHARANI2D · Hashnode: https://dharani2d.hashnode.dev/
@@ -14,6 +15,7 @@ When in doubt, leave it out or write the sentence so it only claims what is list
 - Education: B.E. Computer Science & Engineering, Sri Krishna College of Engineering & Technology (Anna University), 2021–2025, CGPA 8.5/10.
 
 **Experience**
+
 - HPE (Hewlett Packard Enterprise) — current. Sep 2025 – present. SOC Analyst, Cybersecurity Design & Engineering. Previously "Cybersecurity Analyst — SOC & Cyber Defense".
   - Triage 100+ daily security alerts in an enterprise SOC and cyber defense environment, improving incident response efficiency and reducing alert backlog.
   - Manage the full incident lifecycle (detection, triage, containment, eradication, remediation) and perform root cause analysis for phishing, malware, account compromise and lateral movement.
@@ -29,6 +31,7 @@ When in doubt, leave it out or write the sentence so it only claims what is list
 - Facilio — Member of Technical Staff (Intern), 2024. **No other details are known. Do not describe the work.**
 
 **Tools / skills the owner lists**
+
 - Detection / platforms: Splunk, CrowdStrike, Proofpoint, Zscaler, Wiz, threat intelligence platforms.
 - Security engineering: SIEM, SOAR, detection engineering, incident response, threat intelligence, malware analysis, DFIR, security automation, threat hunting, alert correlation, root cause analysis.
 - Cloud: AWS, Azure, IAM, RBAC, MFA, SSO, cloud security, infrastructure security, DevSecOps, zero-trust architecture.
@@ -37,6 +40,7 @@ When in doubt, leave it out or write the sentence so it only claims what is list
 - Frameworks: MITRE ATT&CK, detection pipelines, security observability, policy-as-code (concepts).
 
 **Certifications (earned, shown on the owner's current site)**
+
 - Proofpoint AI Data Security Specialist (2025) — no public link
 - Proofpoint AI Email Security Specialist (2025) — no public link
 - AWS Certified Cloud Practitioner — https://www.credly.com/badges/cc8bf7c0-904d-4c17-b65c-68e85343e29e/public_url
@@ -48,7 +52,8 @@ When in doubt, leave it out or write the sentence so it only claims what is list
 - Planned / next (owner's stated direction, NOT earned): AWS Solutions Architect; security-focused certifications; AI security specialization. Show as "planned"/"in progress", never as completed.
 
 **Systems (owner's own descriptions)**
-- **WITNESS** — Deterministic AI remediation admission gate. A deterministic admission-control layer for autonomous security and AIOps agents that verifies whether the real environment corroborates an agent's proposed remediation before it executes. Problem: autonomous agents can generate plausible remediation actions without sufficient evidence that their causal claims are true. Approach: separate what an agent *claims* from what independently observable system state can *prove*, using deterministic evidence checks before allowing high-impact actions. Impact: moves autonomous security from "the AI thinks this is the problem" to "the environment provides sufficient evidence for this specific action." Checks named by owner: Evidence, Corroboration, Policy, Validation (also Risk and Environment State in the earlier plan). Outcome: allow / deny / escalate. Status: Research / Prototype. Domain: AI Security · AIOps · Detection · Agentic security · Zero trust. Flagship (tier 1).
+
+- **WITNESS** — Deterministic AI remediation admission gate. A deterministic admission-control layer for autonomous security and AIOps agents that verifies whether the real environment corroborates an agent's proposed remediation before it executes. Problem: autonomous agents can generate plausible remediation actions without sufficient evidence that their causal claims are true. Approach: separate what an agent _claims_ from what independently observable system state can _prove_, using deterministic evidence checks before allowing high-impact actions. Impact: moves autonomous security from "the AI thinks this is the problem" to "the environment provides sufficient evidence for this specific action." Checks named by owner: Evidence, Corroboration, Policy, Validation (also Risk and Environment State in the earlier plan). Outcome: allow / deny / escalate. Status: Research / Prototype. Domain: AI Security · AIOps · Detection · Agentic security · Zero trust. Flagship (tier 1).
 - **SignalFusion Core** — Threat signal correlation and SOC orchestration with AI-assisted investigation. Normalizes telemetry across endpoint, cloud and identity systems, correlates entities across time, models attacker behavior with MITRE ATT&CK to surface multi-stage and lateral-movement attacks. Problem: SOCs see thousands of independent signals while real attacks unfold as sequences across identities, endpoints, applications and cloud infrastructure. Approach: correlate signals into behavioral relationships rather than isolated events. Impact: better signal-to-noise; disconnected alerts become contextual investigations. Inputs: SIEM / IDS / EDR / threat intel. Pipeline: correlation engine → AI investigation → response. Stack named: Python · Elasticsearch · SIEM · AI. Flagship (tier 1).
 - **AEGIS** — AI Enforcement & Governance Infrastructure. Zero-trust control plane for AI agents: identity validation, intent-aware authorization, policy-based access control, semantic controls against prompt injection and AI misuse; explicit trust boundaries around autonomous systems. Tier 2.
 - **ARGUS** — Agentic autonomous malware analysis. Domain: DFIR · Malware · AI. Tier 2. (No further details known.)
@@ -59,6 +64,7 @@ When in doubt, leave it out or write the sentence so it only claims what is list
 - **AI DFIR** and **Agentic Security** — research directions only (agentic incident-response architecture; autonomous security agents / trustworthy AI remediation). No papers published.
 
 **Earlier work** (academic / supporting)
+
 - Ransomware Detection and Prevention — Python, behavioral analysis; monitors file-system activity and halts encryption processes on ransomware-like behavior. https://github.com/DHARANI2D/ransomware_detection
 - Deep Fake Detection — ML; audio/video spectral analysis. https://github.com/DHARANI2D/Deep_Fake_Detection
 - Structured Terraform — Terraform, AWS, Kubernetes; modular, environment-specific configuration, secure state. https://github.com/DHARANI2D/terraform-aws
@@ -68,6 +74,7 @@ When in doubt, leave it out or write the sentence so it only claims what is list
 **Writing (Hashnode)**: "Exploring the Future of Blockchain in the Age of Quantum Computing"; "Safeguarding the Future: Quantum Cryptography Unveiled"; "Quantum Odyssey: Unraveling the Mysteries of Tomorrow's Computing" — all via https://dharani2d.hashnode.dev/
 
 ## B. Owner-provided direction (treat as intent, use as stated)
+
 - Positioning: "Security Engineer building detection, correlation, and AI security systems from first principles." Themes: DEFEND (SOC, IR, detection, SIEM/SOAR, cloud), BUILD (systems), RESEARCH (AI security, autonomous agents, trustworthy AI remediation).
 - Career narrative: software engineering → security → SOC → detection engineering → cloud security → AI security → autonomous security systems.
 - Outside security: "Tennis · systems · self-hosting · experimentation" (one small line on About; nothing more).
@@ -75,6 +82,7 @@ When in doubt, leave it out or write the sentence so it only claims what is list
 - Availability line: "AVAILABLE FOR SECURITY ENGINEERING".
 
 ## C. NOT known — never state
+
 - Any metric, count, latency, accuracy, uptime, star count, user count or benchmark for any system.
 - Repo URLs for WITNESS, SignalFusion, AEGIS, ARGUS, Voltrix, DESAS, SecureModelGate (omit GitHub links for them).
 - Papers, publications, talks, awards, "production" deployments, employers' internal details, customers.
@@ -82,7 +90,9 @@ When in doubt, leave it out or write the sentence so it only claims what is list
 - Exact dates other than those listed. City-level location.
 
 ## D. Inference rule for deeper case-study content
+
 Threat models, "engineering decisions", failure modes and security considerations for the systems are **derived by reasoning from the owner's descriptions above** (what a system of that design must defend against). They are drafts for the owner to confirm. Rules:
+
 1. Derive only from what the system is described to do. Never claim an implementation detail ("uses X database", "runs on Y") that is not in section A.
 2. Phrase design reasoning as design intent ("The gate is deterministic so the decision can be replayed and audited"), not as measured results.
 3. Every inferred statement must be listed in `CONTENT_REVIEW.md` (project → statement) so the owner can verify or delete it.

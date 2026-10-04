@@ -1,0 +1,123 @@
+export const meta = {
+  title: "From SIEM alerts to correlated investigations",
+  summary:
+    "An alert describes one event. An attack is a sequence. Notes on correlating signals by entity and time, and on what that design has to defend against.",
+  date: "2026-09-06",
+  tags: ["Detection", "SOC", "Correlation"],
+  number: 1,
+};
+
+## Problem
+
+I triage 100+ security alerts a day in an enterprise SOC. Each alert describes one event: a sign-in, a process start, a blocked URL. The decision is rarely about that event. It is about what else happened to the same account, host or mailbox before and after it.
+
+<Callout type="problem">
+
+An alert answers “what happened here”. The investigation asks “what is this part of”.
+
+</Callout>
+
+Attacks unfold as sequences across identities, endpoints, applications and cloud infrastructure. Take a chain like this one, which is hypothetical: a phishing email is delivered, a sign-in follows from a new location, a mailbox rule is created, and an internal login appears on a server. That is four alerts from four tools. Each one can be triaged as low on its own. Together they are one story.
+
+Rebuilding that story by hand is slow, repetitive work. Pivot from the alert to the entity, then to every other source that mentions it, then put the results in order. Correlation moves that rebuilding into the pipeline, so the analyst starts from the sequence instead of the fragment.
+
+This note is design reasoning. [SignalFusion Core](/systems/signalfusion-core/) is the system where I work it through.
+
+## Architecture
+
+<Diagram
+  alt="A vertical pipeline. Telemetry from SIEM, IDS, EDR and threat intelligence is normalized into one event shape. Entities such as accounts, hosts and mailboxes are resolved. Signals are correlated by entity inside a time window. Behavior is mapped to MITRE ATT&CK tactics and techniques. An investigation is assembled, and an analyst decides on the response."
+  caption="Design sketch. The stages follow the SignalFusion Core description. Showing entity resolution as its own step is illustrative."
+>{`
+SIEM / IDS / EDR / threat intel
+        |
+        v
+[ normalize ]   one event shape
+        |
+        v
+[ resolve   ]   account, host, mailbox
+        |
+        v
+[ correlate ]   entity + time window
+        |
+        v
+[ map       ]   ATT&CK tactic, technique
+        |
+        v
+[ assemble  ]   investigation
+        |
+        v
+analyst decides --> response
+`}</Diagram>
+
+Endpoint, cloud and identity systems describe the same activity in different shapes. The first stage is therefore plain and necessary: put every record in one shape. Correlation across systems only works once records can be compared and joined.
+
+Entity resolution is the stage the rest depends on. One account has different names in different tools. If two names for the same account are never joined, the sequence is never seen.
+
+Correlation groups signals by entity inside a time window. Mapping to MITRE ATT&CK then names the stage each signal represents, so an ordered run of tactics reads as an attack in progress instead of a pile of events. The last stage assembles an investigation: the entity, the ordered signals, and why they were linked.
+
+## Threat model
+
+This pipeline reads data an attacker can influence, and it produces the picture a SOC acts on. Both facts shape the design.
+
+- **Asset.** The SOC’s understanding of what is happening, and analyst attention.
+- **Multi-stage intruder.** Moves through identities, endpoints and cloud resources and keeps each step under a per-alert threshold. Surfacing that sequence is what correlation is for.
+- **Crafted input.** Hostnames, usernames and URLs are written by whoever caused the event. An AI step that reads them can be steered by what they say.
+- **Blind spots.** An attacker who silences or tampers with one telemetry source leaves a gap that looks like quiet.
+
+<Callout type="threat">
+
+Fields in a log are written by whoever caused the event. A hostname can contain instructions. The investigation step reads telemetry as data and never as instruction.
+
+</Callout>
+
+## Design
+
+Five decisions carry most of the weight.
+
+1. **Normalize first.** One event shape, so signals from different tools can be joined.
+2. **Correlate by entity and time.** One alert shows one step. Grouping by the entity a signal touches, inside a window, lets the steps be read as a sequence.
+3. **Map to ATT&CK.** A shared vocabulary turns “these alerts are connected” into a claim an analyst can check, such as lateral movement.
+4. **Keep the signals attached.** Every finding carries the signals behind it, so a reviewer can check the story instead of trusting it.
+5. **Keep investigation and response apart.** An investigation says what is happening. A response changes something. AI-assisted analysis is an input to that decision, not the decision.
+
+Here is the shape of a normalized event.
+
+<CodeBlock lang="json" title="ILLUSTRATIVE / normalized event">
+
+```json
+{
+  "time": "2026-10-04T09:12:31Z",
+  "source": "edr",
+  "entities": [
+    { "type": "host", "id": "host-a" },
+    { "type": "account", "id": "user-1" }
+  ],
+  "action": "process_start",
+  "attack": { "tactic": "execution" },
+  "raw_ref": "edr:evt-0001"
+}
+```
+
+</CodeBlock>
+
+Two details matter. `entities` is a list because one event touches more than one thing, and the overlap between events is how entities get linked. `raw_ref` points back to the original record, so any conclusion can be checked against its source.
+
+## Failure modes
+
+- **Entity resolution fails.** One account appears as two entities and the sequence is never joined.
+- **Clock skew.** Sources disagree on time, events reorder, and a sequence breaks or gets an order it never had.
+- **A silent source.** A source stops sending and nothing marks the gap, so no signal reads as no attack.
+- **Over-correlation.** Unrelated signals join through something shared, such as a service account or a jump host, and produce a false story.
+- **A confident AI reading.** The summary is plausible and unsupported, and the reviewer accepts it without opening the signals.
+- **Behavior the model does not cover.** Activity outside ATT&CK is not surfaced as a sequence.
+
+Most of these fail quietly. A wrong correlation looks like a finding, not like an error. That is why the signals stay attached.
+
+## Lessons
+
+- Correlation is a context problem before it is a scoring problem. The alert is cheap. The rebuilding is the work.
+- A conclusion without its evidence can only be trusted, not reviewed. Attach the signals to every finding.
+- Detection quality has two sides. Designing and optimizing SIEM correlation rules is as much about cutting false positives as about catching more.
+- AI assistance speeds up reading the evidence. It does not move accountability for the response.
+- I am not publishing numbers for SignalFusion Core. This note describes a design and the reasoning behind it.

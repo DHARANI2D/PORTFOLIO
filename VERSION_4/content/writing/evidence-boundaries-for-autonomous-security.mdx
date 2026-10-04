@@ -1,0 +1,102 @@
+export const meta = {
+  title: "Why autonomous security systems need evidence boundaries",
+  summary:
+    "An agent’s claim is not evidence. Where to draw the line between what an agent says and what a system is allowed to act on.",
+  date: "2026-09-20",
+  tags: ["AI security", "Agentic security", "Zero trust"],
+  number: 2,
+};
+
+## Problem
+
+An agent that only answers can be wrong at the cost of a reader’s time. An agent that holds tools can be wrong at the cost of a change to a live system. Once an agent can act, every input it reads is something that can cause an action.
+
+Autonomous agents can produce plausible remediation actions without sufficient evidence that their causal claims are true. Plausible is what a language model is good at. Proof is a different property, and nothing in the model supplies it.
+
+<Callout type="problem">
+
+A claim is what an agent says is true. Evidence is what the environment shows, observed in a way the agent cannot influence. An evidence boundary is the line between the two. An action that crosses it needs evidence from the right side.
+
+</Callout>
+
+SOC work already runs on this distinction. The description in an alert is a claim about a system. Before I contain anything, I look at the system. This note is about building that habit into the architecture instead of leaving it to the agent’s judgment.
+
+## Architecture
+
+<Diagram
+  alt="Three stages stacked top to bottom with an evidence boundary between the first and the second. At the top, on the agent side, the agent observes, reasons and proposes an action. Its claim crosses the evidence boundary into a set of checks that compare the claim with observable environment state, which feeds the checks directly. The checks return allow, deny or escalate. Execution on the system side happens only after allow."
+  caption="Design sketch. The agent proposes, the checks compare the claim with state the agent did not write, and execution waits for allow."
+>{`
+AGENT SIDE
++---------------------+
+| observe, reason,    |
+| propose an action   |
++---------------------+
+           | claim
+           v
+= = = EVIDENCE BOUNDARY = = =
+           |
+           v
++---------------------+   +-------------+
+| checks              |<--| environment |
+| claim vs state      |   | observable  |
++---------------------+   +-------------+
+           | allow / deny / escalate
+           v
++---------------------+
+| execution           |
+| only after allow    |
++---------------------+
+SYSTEM SIDE
+`}</Diagram>
+
+The agent sits on one side. It observes, reasons and proposes, and nothing it says carries authority. On the other side are the systems it could change. Between them is a set of checks that compares each claim with state the agent did not write, and returns allow, deny or escalate. The environment feeds the checks directly, not through the agent.
+
+## Threat model
+
+- **Influenced input.** An attacker shapes what the agent reads: telemetry, tickets, emails, web pages, file names. Once an agent holds tools, prompt injection stops being only a content problem and becomes an access-control problem.
+- **A compromised or malfunctioning agent.** It proposes an action it cannot justify.
+- **A mistaken agent.** It needs no attacker: a plausible causal claim with nothing behind it.
+- **Tampered evidence.** An attacker alters a source the checks read, so a false claim gets corroborated.
+
+<Callout type="threat">
+
+An agent that can be talked into proposing an action can be talked into anything its tools allow. The boundary has to hold when the agent is wrong and when it has been manipulated.
+
+</Callout>
+
+That is why control sits outside the model, at the point where action happens. A rule the model is asked to follow is a request. A rule enforced where the action runs is a control.
+
+## Design
+
+Four rules.
+
+1. **Trust per action, not per agent.** Trust is earned for each action by evidence. It is not granted to an agent because it was right before.
+2. **Evidence has to be independent.** The test is simple: could the agent have caused this observation? If yes, it is not evidence. Evidence the agent can write is evidence the agent can forge.
+3. **Claims have to be checkable.** “The host is compromised” reduces to observable facts: connections, processes, accounts. A claim that cannot be reduced cannot be corroborated.
+4. **Fail closed, with three outcomes.** Missing, stale or conflicting evidence never resolves to allow. Escalate is the honest answer when the evidence neither supports nor contradicts the action.
+
+An illustrative decision table. The shape is what matters: three outcomes, and uncertainty never maps to allow.
+
+| Policy                         | Evidence                      | Outcome  |
+| ------------------------------ | ----------------------------- | -------- |
+| No rule, or forbids the action | Any                           | deny     |
+| Permits the action             | Contradicts it                | deny     |
+| Permits the action             | Missing, stale or conflicting | escalate |
+| Permits the action             | Supports it                   | allow    |
+
+## Failure modes
+
+- **Evidence that looked independent but was not.** A check reads a log the attacker can also write. Independence belongs to the whole path, not to the name of the source.
+- **A source goes unavailable.** The checks cannot corroborate, and that must not resolve to allow.
+- **The checks disagree.** That must not resolve to allow either.
+- **No rule for the action.** A gap has to be read as no permission.
+- **A boundary that is too strict.** It blocks a valid remediation. That costs time, not safety, and the escalate outcome keeps the action alive with the reason stated.
+- **A route around the boundary.** Any path to execution that skips the checks removes the guarantee.
+
+## Lessons
+
+- The boundary limits the damage of a wrong agent. It does not make the agent right.
+- Escalation is an ordinary outcome in SOC work: I make risk-based escalation decisions with global teams. A system limited to allow and deny has no way to say “not enough evidence”.
+- Prompting changes what an agent is likely to say. It does not change what is true.
+- The same premise runs through [AEGIS](/systems/aegis/), [SecureModelGate](/research/securemodelgate/) and [WITNESS](/systems/witness/): control sits outside the model, at the point where action happens.

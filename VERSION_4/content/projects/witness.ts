@@ -1,0 +1,261 @@
+import type { ProjectInput } from "./types";
+
+/**
+ * Flagship. Section A of docs/FACTS.md states: what it is, the problem, the approach, the impact,
+ * the four named checks, the three outcomes, the status and the domain. The order of the checks,
+ * what each one consumes and produces, the escalation path and the threat model are reasoned from
+ * that description and are listed in CONTENT_REVIEW.md for the owner to confirm, edit or delete.
+ * No stack is named in FACTS.md, so none is listed.
+ */
+export const witness = {
+  slug: "witness",
+  name: "WITNESS",
+  tier: 1,
+  category: "AI Security",
+  status: "Research / Prototype",
+  domain: ["AI Security", "AIOps", "Detection", "Agentic security", "Zero trust"],
+  tagline: "A deterministic admission gate for AI remediation.",
+  summary:
+    "Verifies that the real environment corroborates an agent’s proposed remediation before it executes. It separates what an agent claims from what system state can prove.",
+  overview: [
+    "WITNESS is a deterministic admission-control layer for autonomous security and AIOps agents. Before a high-impact remediation executes, it verifies whether the real environment corroborates the agent’s proposal.",
+    "It separates what an agent claims from what independently observable system state can prove, using deterministic evidence checks before allowing high-impact actions. The checks are Evidence, Corroboration, Policy and Validation. The outcome is allow, deny or escalate.",
+    "The impact is a change in what autonomous security rests on: from “the AI thinks this is the problem” to “the environment provides sufficient evidence for this specific action.”",
+  ],
+  problem: [
+    "Autonomous agents can generate plausible remediation actions without sufficient evidence that their causal claims are true.",
+  ],
+  flow: ["Agent proposal", "Evidence gate", "Allow / deny / escalate", "Execution"],
+  stack: [],
+  architecture: {
+    nodes: [
+      {
+        id: "agent",
+        label: "Agent proposal",
+        sublabel: "A claim, not a fact",
+        kind: "actor",
+        col: 0,
+        row: 1,
+        input: "Signals the agent has observed.",
+        process: "Forms a causal hypothesis and proposes a remediation.",
+        output: "A proposed action and the causal claims behind it.",
+        trustBoundary: "Outside the gate. A proposal has no authority to execute.",
+      },
+      {
+        id: "environment",
+        label: "Environment state",
+        sublabel: "Independently observable",
+        kind: "source",
+        col: 1,
+        row: 2,
+        input: "The live system the action would change.",
+        process: "Exposes state that can be observed without taking the agent’s word for it.",
+        output: "Observations the checks compare claims against.",
+        trustBoundary: "Evidence has to come from here, not from the agent.",
+      },
+      {
+        id: "evidence",
+        label: "Evidence",
+        sublabel: "Is the claim supported?",
+        kind: "gate",
+        col: 1,
+        row: 1,
+        input: "The agent’s causal claims.",
+        process: "Looks for supporting evidence for each claim in observable state.",
+        output: "Supported or unsupported, per claim.",
+      },
+      {
+        id: "corroboration",
+        label: "Corroboration",
+        sublabel: "Does the environment agree?",
+        kind: "gate",
+        col: 2,
+        row: 1,
+        input: "The claims and the observed environment state.",
+        process: "Checks whether the real environment corroborates each claim.",
+        output: "Corroborated or not, per claim.",
+      },
+      {
+        id: "policy",
+        label: "Policy",
+        sublabel: "Is this action permitted?",
+        kind: "gate",
+        col: 3,
+        row: 1,
+        input: "The proposed action and the evidence found.",
+        process:
+          "Applies explicit, deterministic rules for the action, including how much evidence it needs.",
+        output: "Permitted or not under policy.",
+      },
+      {
+        id: "validation",
+        label: "Validation",
+        sublabel: "Final check before the decision",
+        kind: "gate",
+        col: 4,
+        row: 1,
+        input: "The proposal and the results of the earlier checks.",
+        process: "Runs the last check on the specific action before a decision is made.",
+        output: "Pass or fail for the specific action.",
+      },
+      {
+        id: "decision",
+        label: "Decision",
+        sublabel: "Allow / deny / escalate",
+        kind: "gate",
+        col: 5,
+        row: 1,
+        input: "The results of all four checks.",
+        process: "Combines the results deterministically into one outcome.",
+        output: "Allow, deny or escalate.",
+        trustBoundary: "The only route to execution passes through this node.",
+      },
+      {
+        id: "execution",
+        label: "Execution",
+        sublabel: "Only after allow",
+        kind: "output",
+        col: 6,
+        row: 0,
+        input: "An allowed action.",
+        process: "Runs the remediation.",
+        output: "A change to the environment.",
+        trustBoundary: "Outside the gate. Runs only after an allow decision.",
+      },
+      {
+        id: "denied",
+        label: "Denied",
+        sublabel: "Does not execute",
+        kind: "output",
+        col: 6,
+        row: 1,
+        input: "A deny decision.",
+        process: "The action is not run.",
+        output: "The proposal ends here.",
+      },
+      {
+        id: "escalated",
+        label: "Escalated",
+        sublabel: "Evidence does not settle it",
+        kind: "output",
+        col: 6,
+        row: 2,
+        input: "An escalate decision.",
+        process: "The action is held, not run, and passed on for a decision with more context.",
+        output: "A held action and the reason the evidence fell short.",
+      },
+    ],
+    edges: [
+      ["agent", "evidence"],
+      ["environment", "evidence"],
+      ["environment", "corroboration"],
+      ["evidence", "corroboration"],
+      ["corroboration", "policy"],
+      ["policy", "validation"],
+      ["validation", "decision"],
+      ["decision", "execution"],
+      ["decision", "denied"],
+      ["decision", "escalated"],
+    ],
+    boundaries: [
+      { id: "agent-side", label: "Agent proposes", nodeIds: ["agent"] },
+      {
+        id: "gate",
+        label: "WITNESS decides",
+        nodeIds: ["evidence", "corroboration", "policy", "validation", "decision"],
+      },
+      { id: "execution-side", label: "Execution after the gate", nodeIds: ["execution"] },
+    ],
+    caption:
+      "Schematic of the design. The agent proposes, WITNESS decides, and execution happens only after the gate. The order of the checks is illustrative.",
+  },
+  threatModel: {
+    assets: [
+      "The environment that remediation actions change",
+      "The meaning of an allow: the evidence supported this specific action",
+      "The evidence sources and the policy the checks rely on",
+      "The record of each decision, so it can be replayed and audited",
+    ],
+    attackSurface: [
+      "The agent’s proposal: its claims and the action it requests",
+      "The telemetry and content the agent reads, which an attacker may be able to influence",
+      "The evidence sources the checks read",
+      "The policy definitions",
+      "The path from an allow decision to execution",
+    ],
+    trustBoundaries: [
+      "Agent to gate: a proposal enters as a claim, never as an instruction.",
+      "Environment to gate: independently observable state is the only accepted basis for corroboration.",
+      "Gate to execution: execution happens only after the gate returns allow.",
+    ],
+    threatActors: [
+      "An attacker who influences what the agent observes, steering it toward a harmful but plausible remediation",
+      "A compromised or malfunctioning agent that proposes actions it cannot justify",
+      "A mistaken agent that is not malicious: plausible causal claims with no evidence behind them",
+      "An attacker who tampers with an evidence source so that a false claim is corroborated",
+    ],
+    assumptions: [
+      "Independently observable state exists for the claims being checked",
+      "The agent cannot write to the evidence sources",
+      "Policy is authored and changed outside the agent’s reach",
+      "No route to execution bypasses the gate",
+    ],
+    failureModes: [
+      "Evidence is missing or ambiguous, so the claim cannot be corroborated and the action must not run on the agent’s word alone",
+      "An evidence source is unavailable, which must not resolve to allow",
+      "The checks disagree, which must not resolve to allow",
+      "An action class has no policy rule, leaving a gap the gate has to treat as no permission",
+      "Policy is too strict and blocks a valid remediation, which costs time rather than safety",
+      "An execution route that skips the gate removes the guarantee",
+    ],
+    controls: [
+      "Deterministic checks: the same inputs and policy produce the same decision",
+      "Claims kept separate from evidence",
+      "Explicit allow, deny and escalate outcomes, with no execution unless the outcome is allow",
+      "Execution only after the gate",
+      "Replayable decisions, because the checks are deterministic",
+    ],
+  },
+  decisions: [
+    {
+      question: "Why a deterministic gate?",
+      answer:
+        "A model that judges another model shares its failure mode: plausible text without proof. A deterministic gate returns the same decision for the same inputs, so a decision can be replayed, audited and explained afterwards. The cost is that it only checks what has been written down as a check.",
+    },
+    {
+      question: "Why separate claims from evidence?",
+      answer:
+        "A claim is what the agent says is true. Evidence is what the environment shows. If the gate accepts the claim as its own evidence, the check is circular. Keeping them apart means an agent cannot talk its way past the gate.",
+    },
+    {
+      question: "Why escalate instead of auto-deny?",
+      answer:
+        "Too little evidence is not the same as a wrong action. A deny discards a remediation that may be correct. Escalation keeps it, with the gap stated, for a decision with more context. Deny fits actions that policy forbids or that the evidence contradicts.",
+    },
+    {
+      question: "Why not autonomous execution?",
+      answer:
+        "A high-impact action changes a live system, and a wrong action costs more than a delayed one. An agent’s confidence is not evidence, so execution waits for the gate.",
+    },
+    {
+      question: "Why check the specific action, not just the diagnosis?",
+      answer:
+        "Evidence that a problem exists does not justify every action against it. The gate asks whether the evidence supports this specific action, not whether the agent’s diagnosis is plausible.",
+    },
+    {
+      question: "Why a gate in front of execution instead of better prompting?",
+      answer:
+        "Prompting changes what an agent is likely to say. It does not change what is true. Admission control sits outside the agent, so it still holds when the agent is wrong or has been manipulated.",
+    },
+  ],
+  security: [
+    "The gate is a high-value control. Any route to execution that skips it removes the guarantee, so the execution path should have no such entry.",
+    "Evidence sources must be outside the agent’s control. Evidence the agent can write is evidence the agent can forge.",
+    "Changing policy is a privileged operation, kept separate from the agent.",
+    "Fail closed: missing or conflicting evidence should never resolve to allow.",
+    "Deterministic does not mean correct. A check that is wrong is wrong every time, so the checks themselves need review.",
+    "WITNESS is research and prototype work. Read it as a research design, not as a deployed control.",
+  ],
+  links: {},
+  graphNodes: ["ai", "agents", "detection", "automation"],
+} satisfies ProjectInput;
