@@ -305,7 +305,9 @@ test.describe("mobile menu", () => {
   }) => {
     await page.goto("/");
     await waitForHydration(page);
-    const button = page.getByRole("button", { name: "Menu", exact: true });
+    // The modal dialog hides the rest of the page from assistive technology, so look the button
+    // up with includeHidden to keep reading its state while the menu is open.
+    const button = page.getByRole("button", { name: "Menu", exact: true, includeHidden: true });
     await expect(button).toHaveAttribute("aria-expanded", "false");
 
     await button.click();

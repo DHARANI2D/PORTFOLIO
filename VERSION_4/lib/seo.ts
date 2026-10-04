@@ -3,6 +3,14 @@ import { site } from "@/lib/site";
 
 export const absoluteUrl = (path = "/") => `${site.url}${path.startsWith("/") ? path : `/${path}`}`;
 
+const OG_IMAGE = {
+  url: absoluteUrl("/opengraph-image"),
+  width: 1200,
+  height: 630,
+  type: "image/png",
+  alt: `${site.name}. Security Engineer. Detection, cloud security, AI security.`,
+};
+
 type MetaInput = {
   /** Page title WITHOUT the site suffix (layout supplies the template). Omit for the home page. */
   title?: string;
@@ -32,9 +40,12 @@ export function buildMetadata({
       url: absoluteUrl(path),
       siteName: site.name,
       locale: "en",
+      // A page-level `openGraph` replaces the layout's whole object, which drops the file-based
+      // image from app/opengraph-image.tsx. Repeat it here so every page has a social card.
+      images: [OG_IMAGE],
       ...(publishedTime ? { publishedTime } : {}),
     },
-    twitter: { card: "summary_large_image", title: fullTitle, description },
+    twitter: { card: "summary_large_image", title: fullTitle, description, images: [OG_IMAGE.url] },
   };
 }
 

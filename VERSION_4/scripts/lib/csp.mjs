@@ -369,6 +369,9 @@ const HEADERS_FILE_NOTE = [
 const ASSET_RULES = Object.freeze([
   ["/_next/static/*", [["Cache-Control", IMMUTABLE_CACHE]]],
   ["/.well-known/security.txt", [["Content-Type", "text/plain; charset=utf-8"]]],
+  // Next emits the social card as an extensionless file. With nosniff on, a host that guesses the
+  // wrong type would make crawlers reject it, so the type is stated explicitly.
+  ["/opengraph-image", [["Content-Type", "image/png"]]],
 ]);
 
 /**
