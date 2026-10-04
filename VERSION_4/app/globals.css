@@ -1,0 +1,176 @@
+@import "tailwindcss";
+
+/*
+ * Design tokens. Dark is the default (security identity); light is a first-class theme.
+ * Theme + view mode are set on <html> by an inline init script before first paint:
+ *   <html data-theme="dark|light" data-view="engineer|recruiter">
+ * Accent is used sparingly: active nav, status dots, selected tags, diagram nodes, primary CTA.
+ */
+:root {
+  color-scheme: dark;
+  --background: #090909;
+  --foreground: #f5f5f5;
+  --muted: #929292;
+  --border: #242424;
+  --border-strong: #343434;
+  --surface: #111111;
+  --surface-hover: #161616;
+  --accent: #8b5cf6;
+  --accent-foreground: #ffffff;
+  --accent-soft: rgb(139 92 246 / 0.14);
+  --grid-line: rgb(255 255 255 / 0.035);
+}
+
+[data-theme="light"] {
+  color-scheme: light;
+  --background: #f7f7f5;
+  --foreground: #111111;
+  --muted: #6b6b6b;
+  --border: #e5e5e1;
+  --border-strong: #d2d2cc;
+  --surface: #ffffff;
+  --surface-hover: #fafaf8;
+  --accent: #6d28d9;
+  --accent-foreground: #ffffff;
+  --accent-soft: rgb(109 40 217 / 0.09);
+  --grid-line: rgb(0 0 0 / 0.04);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-surface: var(--surface);
+  --color-surface-hover: var(--surface-hover);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent-soft: var(--accent-soft);
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+  --breakpoint-xs: 30rem;
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-top: 5rem;
+    background: var(--background);
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    font-size: 1rem;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overflow-x: clip;
+  }
+  ::selection {
+    background: var(--accent);
+    color: var(--accent-foreground);
+  }
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+    border-radius: 4px;
+  }
+  button {
+    cursor: pointer;
+  }
+}
+
+/* Typography helpers */
+@utility display {
+  font-weight: 560;
+  letter-spacing: -0.04em;
+  line-height: 0.98;
+  text-wrap: balance;
+}
+@utility headline {
+  font-weight: 540;
+  letter-spacing: -0.035em;
+  line-height: 1.05;
+  text-wrap: balance;
+}
+@utility label-mono {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  line-height: 1.2;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+@utility surface-grid {
+  background-image:
+    linear-gradient(var(--grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+  background-size: 64px 64px;
+}
+
+/*
+ * View mode ("VIEW AS"): same content, different presentation. CSS-only so it works with
+ * static HTML and never re-renders. Mark content blocks with these attributes.
+ *   data-engineer-only  -> hidden in recruiter view
+ *   data-recruiter-only -> hidden in engineer view
+ */
+[data-view="recruiter"] [data-engineer-only] {
+  display: none !important;
+}
+[data-view="engineer"] [data-recruiter-only] {
+  display: none !important;
+}
+
+/* Motion: the site is calm by default and silent when asked. */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}
+
+/* Shiki dual-theme code blocks (defaultColor: false emits --shiki-light / --shiki-dark) */
+.shiki,
+.shiki span {
+  color: var(--shiki-dark);
+  background-color: transparent;
+}
+[data-theme="light"] .shiki,
+[data-theme="light"] .shiki span {
+  color: var(--shiki-light);
+}
+
+/* Screen-reader-only + skip link */
+.skip-link {
+  position: fixed;
+  left: 1rem;
+  top: -4rem;
+  z-index: 100;
+  background: var(--accent);
+  color: var(--accent-foreground);
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.375rem;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  transition: top 0.15s;
+}
+.skip-link:focus {
+  top: 1rem;
+}
