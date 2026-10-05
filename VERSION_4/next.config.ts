@@ -11,6 +11,9 @@ import type { NextConfig } from "next";
  */
 const nextConfig: NextConfig = {
   output: "export",
+  // Optional private build directory (BUILD_DIR=.build-x pnpm build:isolated). Static export is
+  // written to distDir, so parallel builds never touch each other or ./out.
+  distDir: process.env.BUILD_DIR ?? ".next",
   trailingSlash: true,
   reactCompiler: true,
   pageExtensions: ["ts", "tsx", "md", "mdx"],

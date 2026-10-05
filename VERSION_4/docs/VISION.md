@@ -4,6 +4,7 @@
 > Not a developer-portfolio cliché. It should say: _this person builds security systems_.
 
 ## Positioning
+
 - Security Engineer building detection, correlation and AI security systems from first principles.
 - Themes: DEFEND (SOC, IR, detection, cloud), BUILD (systems), RESEARCH (AI security, autonomous agents).
 - Mental model: Identity → Signal → Systems → Experience → Research → Knowledge → Contact.
@@ -11,15 +12,18 @@
 - Flagship hierarchy: WITNESS + SignalFusion Core (+ Helios identity) carry the site. Tier 2: ARGUS, Voltrix, AEGIS. Tier 3: DESAS. Academic work lives under "Earlier work". Do not give every project equal weight.
 
 ## Information architecture
+
 Nav: `DS / HELIOS` · WORK · SYSTEMS · RESEARCH · WRITING · ABOUT · RESUME, plus a tasteful status line ("● AVAILABLE FOR SECURITY ENGINEERING").
 Routes: `/`, `/about`, `/systems` (+ one page per system), `/experience`, `/research` (+ items), `/writing` (+ notes), `/certifications`, `/resume`, `/contact`, `/privacy`, `/.well-known/security.txt`.
 Home order: hero → 01 SIGNAL → 02 SYSTEMS ("Systems, not demos.") → 03 EXPERIENCE → 04 RESEARCH → 05 STACK → 06 FIELD NOTES → 07 CONTACT ("Let's build something secure.") → footer ("SYSTEM STATUS ● OPERATIONAL").
 
 ## Hero
+
 - Eyebrow `SECURITY ENGINEER · DETECTION · AI SECURITY`; headline "Building security systems that can see, reason, and respond."; support line; four proof labels; CTAs EXPLORE SYSTEMS / VIEW RESUME.
 - NOT "Hi, I'm X". Small calm "Helios Security Core" visual (DETECT → CORRELATE → INVESTIGATE → RESPOND), optional occasional boot console. Not a hacker terminal.
 
 ## Visual language
+
 - Dark default, light excellent. Off-black / near-white, thin 1px borders, generous whitespace, small mono labels, large sans headlines, accent (violet) used sparingly.
 - Geist Sans + Geist Mono. Section numbering "01 / SYSTEMS" in mono. 1200–1280px container, 12-col desktop / 4-col mobile, spacing scale 8·12·16·24·32·48·64·96·128.
 - Borders create structure, not shadows. Subtle motion only: opacity + 8–16px, card hover −3px, path drawing, signal flow, count-up. Respect `prefers-reduced-motion`.
@@ -27,12 +31,14 @@ Home order: hero → 01 SIGNAL → 02 SYSTEMS ("Systems, not demos.") → 03 EXP
 - One signature visual: the ambient **security graph** (SOC, DETECTION, CLOUD, AI, DFIR, AGENTS, AUTOMATION) whose nodes activate with the section/page being viewed.
 
 ## Systems / case studies
+
 - Cards look like system components (name, tagline, mini flow diagram, stack, "CASE STUDY →"), not image cards.
 - Each system has its own page: hero (status/domain), overview, problem, **threat model** (assets, attack surface, trust boundaries, threat actors, assumptions, failure modes, controls), **interactive architecture diagram** (hover/focus node → INPUT / PROCESS / OUTPUT / TRUST BOUNDARY), **engineering decisions** ("Why …?"), security considerations, links only if real.
 - Three layers of information everywhere: 3 seconds (what), 30 seconds (why it matters), 5 minutes (how it works).
 - Card diagram morphs into the page diagram via View Transitions where supported.
 
 ## Other features
+
 - Recruiter / Engineer view toggle ("VIEW AS"): same content, different depth. Recruiter: current role, experience, flagship systems, skills, certifications, resume, contact. Engineer: architecture, research, threat models, notes, GitHub.
 - Command palette (⌘K / Ctrl K) searching pages, systems, research, writing, skills, experience; actions (theme, view, terminal, system overview). Keyboard sequences `g h`, `g s`, `g r`, `g w`, `g c`… not advertised heavily.
 - Hidden terminal easter egg: help, about, experience, projects, skills, research, contact, resume, status, matrix (text table of domains, not rain).
@@ -43,6 +49,7 @@ Home order: hero → 01 SIGNAL → 02 SYSTEMS ("Systems, not demos.") → 03 EXP
 - Metrics panel only from real content counts.
 
 ## Engineering quality bars
+
 - Static export, Server Components by default, minimal client JS. LCP < 2.0 s, CLS ≈ 0, excellent INP.
 - WCAG 2.2 AA: keyboard, visible focus, semantic HTML, reduced motion, contrast, labelled controls, accessible dialogs/palette.
 - Security of the site itself: hash-based CSP (no `unsafe-inline` for scripts), HSTS, nosniff, Referrer-Policy, Permissions-Policy, no third-party scripts/CDN/analytics, `security.txt`, honest privacy page.

@@ -2,7 +2,7 @@
   "name": "portfolio",
   "version": "1.0.0",
   "private": true,
-  "description": "Dharanidharan Senthilkumar — Security Engineer. Portfolio.",
+  "description": "Dharanidharan Senthilkumar \u2014 Security Engineer. Portfolio.",
   "packageManager": "pnpm@10.28.0",
   "engines": {
     "node": ">=22"
@@ -17,7 +17,8 @@
     "format:check": "prettier --check .",
     "test": "vitest run",
     "test:e2e": "playwright test",
-    "check": "pnpm lint && pnpm typecheck && pnpm test"
+    "check": "pnpm lint && pnpm typecheck && pnpm test",
+    "build:isolated": "next build && node scripts/postbuild.mjs --out \"$BUILD_DIR\""
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",
