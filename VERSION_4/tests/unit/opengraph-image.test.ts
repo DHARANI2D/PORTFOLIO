@@ -11,7 +11,7 @@ describe("opengraph image", () => {
   });
 
   it("renders a 1200x630 PNG", async () => {
-    const response = OpengraphImage();
+    const response = await OpengraphImage();
     expect(response.headers.get("content-type")).toBe("image/png");
 
     const bytes = new Uint8Array(await response.arrayBuffer());

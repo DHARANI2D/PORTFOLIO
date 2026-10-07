@@ -7,7 +7,7 @@ The design brief was "a quiet security engineering lab". Minimal at first glance
 - Identity, experience, systems, research, field notes, certifications, resume, contact, privacy.
 - Dark by default, light theme, **engineer** and **recruiter** views.
 - WCAG 2.2 AA target, reduced-motion support, works without JavaScript for reading.
-- Hash-based Content-Security-Policy generated at build time. See [Security posture](#security-posture).
+- Hash-based Content-Security-Policy generated at build time, in the HTML of every page and in the response headers. See [Security posture](#security-posture).
 
 All copy comes from [`docs/FACTS.md`](docs/FACTS.md). If a fact is not in that file, the site does not state it.
 
@@ -35,17 +35,19 @@ pnpm dev          # http://localhost:3000
 
 ## Scripts
 
-| Script              | What it does                                                                                 |
-| ------------------- | -------------------------------------------------------------------------------------------- |
-| `pnpm dev`          | Next.js dev server                                                                           |
-| `pnpm build`        | `next build` (static export to `out/`), then `scripts/postbuild.mjs` (headers, security.txt) |
-| `pnpm lint`         | ESLint                                                                                       |
-| `pnpm typecheck`    | `tsc --noEmit`                                                                               |
-| `pnpm format`       | Prettier, write                                                                              |
-| `pnpm format:check` | Prettier, check                                                                              |
-| `pnpm test`         | Unit tests (Vitest)                                                                          |
-| `pnpm test:e2e`     | End-to-end tests (Playwright). Needs `out/`, so run `pnpm build` first                       |
-| `pnpm check`        | Lint, typecheck and unit tests                                                               |
+| Script                                   | What it does                                                                                                                        |
+| ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm dev`                               | Next.js dev server                                                                                                                  |
+| `pnpm build`                             | `next build` (static export to `out/`), then `scripts/postbuild.mjs` (CSP tag in every HTML file, headers, security.txt)            |
+| `BUILD_DIR=.build-x pnpm build:isolated` | The same build into a private folder (`.build-x`) instead of `out/`, for parallel builds and experiments. `.build-*` is git-ignored |
+| `pnpm start`                             | Serves `out/` on http://127.0.0.1:3000 through `tests/e2e/static-server.mjs`: production headers, no download                       |
+| `pnpm lint`                              | ESLint                                                                                                                              |
+| `pnpm typecheck`                         | `tsc --noEmit` for the app, then `tsc -p tests/e2e --noEmit` for the Playwright specs                                               |
+| `pnpm format`                            | Prettier, write                                                                                                                     |
+| `pnpm format:check`                      | Prettier, check                                                                                                                     |
+| `pnpm test`                              | Unit tests (Vitest)                                                                                                                 |
+| `pnpm test:e2e`                          | End-to-end tests (Playwright). Needs `out/`, so run `pnpm build` first                                                              |
+| `pnpm check`                             | Lint, typecheck and unit tests                                                                                                      |
 
 To preview the built site **with its production headers**, including the CSP:
 
@@ -54,7 +56,7 @@ pnpm build
 node tests/e2e/static-server.mjs --dir out --port 4173   # http://127.0.0.1:4173
 ```
 
-That is the same server the end-to-end tests use. It serves `out/_headers` and the 404 page the way a static host does. (`pnpm start` runs `serve` through `pnpm dlx`, which downloads a package at run time and sends no security headers.)
+That is the same server the end-to-end tests use, and `pnpm start` runs it on port 3000. It serves `out/_headers` and the 404 page the way a static host does. It removes `upgrade-insecure-requests` from the policy (header and tag) because it runs on plain http, and nothing else. `--csp-header off` drops the policy header to show what a host without header support serves: the tag in the HTML still enforces the policy.
 
 ## Project structure
 
@@ -72,10 +74,14 @@ content/          Typed content: projects/, research/, experience, skills, certi
                   earlier-work, and writing/*.mdx
 lib/              content.ts (validated accessors), site.ts, seo.ts, preferences.ts, writing.ts,
                   search-index.ts, fuzzy.ts, terminal-commands.ts, github.ts, ui-events.ts
-scripts/          postbuild.mjs and lib/csp.mjs (CSP, headers, security.txt)
-tests/            unit/ (Vitest) and e2e/ (Playwright, static-server.mjs)
-docs/             FACTS.md, ARCHITECTURE.md, SECURITY.md
+scripts/          postbuild.mjs and lib/csp.mjs (CSP tag and headers, security.txt)
+tests/            unit/ (Vitest), e2e/ (Playwright, fixtures.ts, static-server.mjs, tsconfig.json)
+docs/             FACTS.md, VISION.md, ARCHITECTURE.md, SECURITY.md
 public/           Favicons and the avatar
+netlify.toml      Netlify build settings (headers come from out/_headers)
+vercel.json       Vercel build settings and the baseline security headers
+vitest.config.mts Vitest configuration (.mts so it loads as ESM without a warning)
+../.github/       CI workflow and dependabot.yml (at the repository root)
 ```
 
 How the pieces fit together is in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
@@ -159,16 +165,27 @@ Automated checks find only part of the accessibility problems. Before a release,
 
 The site is a static export, so there is no server-side attack surface to defend: no API, no form handler, no database, no secrets.
 
-- **Content-Security-Policy generated per build.** Next.js emits a few inline scripts (the theme init script and the React Server Components data). `scripts/postbuild.mjs` hashes each one (sha256) and writes a policy whose `script-src` is `'self'` plus those hashes. There is no `'unsafe-inline'` or `'unsafe-eval'` for scripts. Each page gets its own policy, listing only its own hashes.
+- **Content-Security-Policy generated per build.** Next.js emits a few inline scripts (the theme init script and the React Server Components data). `scripts/postbuild.mjs` hashes each one (sha256) and writes a policy whose `script-src` is `'self'` plus those hashes. There is no `'unsafe-inline'` or `'unsafe-eval'` anywhere in the policy, scripts and styles included. `style-src` is `'self'`; the few inline `style` attributes (the Shiki colour variables of two field notes) are allowed by `style-src-attr 'unsafe-hashes'` and a hash each. `img-src` is `'self'`. Each page gets its own policy, listing only its own hashes.
+- **The policy is in two places.** The same policy is written into every HTML file as `<meta http-equiv="Content-Security-Policy">`, first in `<head>` (after `<meta charset>`), including `404.html` and `_not-found`. It is also sent as a header where the host reads `out/_headers`. A browser enforces both when both arrive, and they are identical apart from `frame-ancestors`, which only a header can carry.
 - **Other headers**: HSTS (preload), `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, a restrictive `Permissions-Policy`, `Cross-Origin-Opener-Policy: same-origin`, `X-Frame-Options: DENY`, and long-lived caching for fingerprinted assets.
-- **Written to `out/_headers`** (Netlify and Cloudflare Pages) and **`out/headers.vercel.json`** (Vercel).
+- **Written to `out/_headers`** (Netlify and Cloudflare Pages) and **`out/headers.vercel.json`** (Vercel, the baseline headers are already in `vercel.json`).
 - **`/.well-known/security.txt`** (RFC 9116) with the contact address from `lib/site.ts` and an expiry just under a year after each build.
 - **No third-party scripts, fonts, images or analytics.** The build fails if the built HTML references another origin, contains inline event handlers or `javascript:` URLs.
 - **The contact form sends nothing.** It composes a `mailto:` link for your own mail client.
 - **The one build-time network call** is the public GitHub API for the build-log panel. It runs at build, is validated with Zod, accepts only `https://github.com` URLs, and falls back to a curated list if it fails.
 - **Privacy**: no cookies. Four storage keys, all local, all listed on `/privacy/`.
 
-The trade-offs and the threat model are in [`docs/SECURITY.md`](docs/SECURITY.md). The one known compromise: `style-src` allows `'unsafe-inline'` because React and Motion emit inline `style` attributes.
+### What each host enforces
+
+| Host                                 | CSP (script, style, img, connect, form, object, base) | `frame-ancestors`, `X-Frame-Options` | HSTS and the other baseline headers | 404 pages and unknown URLs                          |
+| ------------------------------------ | ----------------------------------------------------- | ------------------------------------ | ----------------------------------- | --------------------------------------------------- |
+| Netlify, Cloudflare Pages            | header and tag                                        | yes                                  | yes (`_headers`)                    | tag (a header rule matches the requested path only) |
+| Vercel                               | tag                                                   | `X-Frame-Options` only               | yes (`vercel.json`)                 | tag                                                 |
+| Any other static host or file server | tag                                                   | no                                   | only what the host sets             | tag                                                 |
+
+What only a header can do, and the tag cannot: `frame-ancestors` (clickjacking; `X-Frame-Options: DENY` covers it where headers work), HSTS, and `report-uri`. On a host with no header support those are missing. The tag is read only after the browser has started parsing, so the first bytes of `<head>` (the charset tag) precede it, and nothing the page loads does.
+
+The trade-offs and the threat model are in [`docs/SECURITY.md`](docs/SECURITY.md).
 
 ## Deployment
 
@@ -192,17 +209,13 @@ Root directory `VERSION_4`, build command `pnpm build`, output directory `out`, 
 
 ### Vercel
 
-Root directory `VERSION_4`. `vercel.json` sets the build, the output directory (`out`), `trailingSlash` and the **baseline** security headers (everything except the CSP).
+Root directory `VERSION_4`. `vercel.json` sets the build, the output directory (`out`), `trailingSlash` and the **baseline** security headers (everything except the CSP). Vercel ignores `out/_headers`.
 
-The CSP cannot live in a static `vercel.json` by default because it contains hashes that belong to one build. To enable it:
+The Content-Security-Policy does not depend on a header: `postbuild.mjs` writes it into every HTML file as a `<meta http-equiv>` tag, so Vercel enforces it with no extra step and it cannot go stale. `frame-ancestors` is the one directive that stays header-only; `X-Frame-Options: DENY` in `vercel.json` covers clickjacking.
 
-1. `pnpm build`
-2. Open `out/headers.vercel.json` and copy its `headers` array.
-3. Replace the `headers` array in `vercel.json` with it, and commit.
+Optionally, to also send the policy as a header, copy the `headers` array from `out/headers.vercel.json` into `vercel.json` after each build. A stale copy would be blocked by the tag, so `postbuild.mjs` fails the Vercel build (and `node scripts/postbuild.mjs --check` fails CI) when `vercel.json` holds CSP rules that differ from the current build. A `vercel.json` with no CSP rules is never considered stale. Most deployments should skip this step.
 
-Hashes change whenever page content or the Next.js build changes, so repeat these steps after every content or code change. A stale copy would block the new inline scripts and break every page, so the build refuses to ship one: `postbuild.mjs` fails the Vercel build (and `node scripts/postbuild.mjs --check` fails CI) when `vercel.json` holds CSP rules that differ from the current build. A `vercel.json` with no CSP rules is never considered stale.
-
-If that routine is not worth it, use Netlify or Cloudflare Pages, where it is automatic. A host that cannot set response headers (GitHub Pages) cannot enforce any of this.
+A host that cannot set any response header (GitHub Pages) still enforces the policy through the tag, but sends no HSTS and cannot refuse framing.
 
 ## Testing
 
@@ -211,22 +224,23 @@ If that routine is not worth it, use Netlify or Cloudflare Pages, where it is au
 Vitest, Node environment by default, jsdom for tests marked `// @vitest-environment jsdom`. Files are in `tests/unit/`:
 
 - `content.test.ts`: every accessor parses; unique slugs; every project has a flow; flagship projects have an architecture and a threat model; diagram edges and boundaries reference real nodes; only owner-published links; no unsupported claims (percentages, measured quantities, counts of users, uptime, production, awards) and none of the banned hype words.
-- `csp.test.ts`: hashing against the CSP specification's test vector, JSON-LD excluded, no `unsafe-inline` in `script-src`, headers file format, security.txt, and `postbuild.mjs` run end to end against fixture exports.
+- `csp.test.ts`: hashing against the CSP specification's test vector, JSON-LD excluded, no `unsafe-inline` anywhere in the policy, style attribute and `<style>` hashing, the `<meta>` tag (position, idempotence, verification), headers file format, security.txt, and `postbuild.mjs` run end to end against fixture exports.
 - `fuzzy.test.ts`, `terminal-commands.test.ts`, `search-index.test.ts`, `preferences.test.tsx`, `seo.test.tsx`, `github.test.ts`, `writing.test.ts`, `metadata-routes.test.ts` (sitemap, robots, manifest), `opengraph-image.test.ts` (renders the PNG), `static-server.test.ts` (the server the e2e suite depends on).
 
 ### End to end (`pnpm build && pnpm test:e2e`)
 
-Playwright runs against `out/` through `tests/e2e/static-server.mjs`, which serves `out/_headers`. A CSP violation therefore appears as a console error and fails the page test. Specs:
+Playwright runs against `out/` through `tests/e2e/static-server.mjs`, which serves `out/_headers`. `tests/e2e/fixtures.ts` exports a `test` that fails ANY test in which the page fires a `securitypolicyviolation` event or logs a policy error, so specs import `test` and `expect` from `./fixtures`. A test that provokes a violation on purpose sets `test.use({ allowCspViolations: true })`. Specs:
 
-| Spec                     | Covers                                                                                                                |
-| ------------------------ | --------------------------------------------------------------------------------------------------------------------- |
-| `routes.spec.ts`         | Every URL in `sitemap.xml` returns 200, has one `h1` and `main#main`, no console errors, no failed requests; 404 page |
-| `a11y.spec.ts`           | axe-core WCAG 2.2 AA on key routes in dark, light and recruiter view, and on the palette, terminal and menu           |
-| `interactions.spec.ts`   | Palette (`Ctrl+K`, search, Enter), go-to keys, terminal, theme and view persistence, mobile menu focus                |
-| `responsive.spec.ts`     | No horizontal overflow or clipped content at 320, 375, 768 and 1280px; 44px touch targets                             |
-| `reduced-motion.spec.ts` | No running animations, all content opaque, final state without JavaScript                                             |
-| `security.spec.ts`       | Only allowed inline scripts, same-origin resources only, `rel="noopener"`, `_headers` and `security.txt`              |
-| `seo.spec.ts`            | Canonical equals sitemap URL, Open Graph image resolves to a PNG, JSON-LD parses, manifest and robots                 |
+| Spec                     | Covers                                                                                                                                                                                                  |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `routes.spec.ts`         | Every URL in `sitemap.xml` returns 200, has one `h1` and `main#main`, no console errors, no failed requests; 404 page                                                                                   |
+| `a11y.spec.ts`           | axe-core WCAG 2.2 AA on key routes in dark, light and recruiter view, and on the palette, terminal and menu                                                                                             |
+| `interactions.spec.ts`   | Palette (`Ctrl+K`, search, Enter), go-to keys, terminal, theme and view persistence, mobile menu focus                                                                                                  |
+| `responsive.spec.ts`     | No horizontal overflow or clipped content at 320, 375, 768 and 1280px; 44px touch targets                                                                                                               |
+| `reduced-motion.spec.ts` | No running animations, all content opaque, final state without JavaScript                                                                                                                               |
+| `security.spec.ts`       | Only allowed inline scripts, same-origin resources only, `rel="noopener"`, `_headers` and `security.txt`                                                                                                |
+| `seo.spec.ts`            | Canonical equals sitemap URL, Open Graph image resolves to a PNG, JSON-LD parses, manifest and robots                                                                                                   |
+| `platform-fixes.spec.ts` | Policy tag first in `<head>` of every HTML file, no violation on any route in both themes after palette, terminal, toggles and diagram hover, the tag alone enforcing the policy when no header is sent |
 
 Projects: `desktop` (1440x900), `mobile` (Pixel 5) and `reduced-motion`.
 
@@ -243,10 +257,11 @@ Browser: Playwright's own Chromium by default (`pnpm exec playwright install chr
 `.github/workflows/portfolio.yml` (repository root) runs on pushes and pull requests that touch `VERSION_4/**`:
 
 1. **quality**: `pnpm install --frozen-lockfile`, lint, typecheck, format check, unit tests.
-2. **build**: `pnpm build`, then checks that `out/_headers`, `security.txt` and `headers.vercel.json` exist, that no `script-src` allows `unsafe-inline` or `unsafe-eval`, and runs `node scripts/postbuild.mjs --check`. Uploads `out/` as an artifact.
+   It also runs `pnpm audit --prod --audit-level=high`, which fails on a known high or critical advisory in a production dependency. An advisory in a development dependency is reported by a second, non-blocking step.
+2. **build**: `pnpm build`, then checks that `out/_headers`, `security.txt` and `headers.vercel.json` exist, that the policy never contains `unsafe-inline` or `unsafe-eval`, and runs `node scripts/postbuild.mjs --check` (a policy tag in every HTML file, a header policy for every page). Uploads `out/` as an artifact.
 3. **e2e**: downloads that artifact, installs Chromium and runs Playwright against it.
 
-The workflow has `contents: read` permission only, no secrets, and does not deploy.
+The workflow has `contents: read` permission only, no secrets, and does not deploy. Actions are pinned to major version tags (mutable). `.github/dependabot.yml` opens a weekly grouped pull request for npm (minor and patch together, majors alone) and for the actions, so pins stay fresh through reviewed changes. Pinning to a commit SHA is the stricter option and can replace the tags if the owner wants it.
 
 ## Credits
 

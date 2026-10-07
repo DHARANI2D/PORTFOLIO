@@ -41,6 +41,17 @@ describe("buildMetadata", () => {
     expect(String(meta.alternates?.canonical)).toMatch(/^https?:\/\/.+\/$/);
   });
 
+  it("uses a language_TERRITORY locale and a versioned social card with alt text on both networks", () => {
+    const meta = buildMetadata({ title: "About", path: "/about/" });
+    expect(meta.openGraph).toMatchObject({ locale: "en_US" });
+    const card = `${site.url}/opengraph-image`;
+    const images = (meta.openGraph as { images: { url: string; alt: string }[] }).images;
+    expect(images[0]?.url).toMatch(new RegExp(`^${card}\\?v=[0-9a-f]{8}$`));
+    const twitter = (meta.twitter as { images: { url: string; alt: string }[] }).images;
+    expect(twitter[0]).toMatchObject({ url: images[0]?.url, width: 1200, height: 630 });
+    expect(twitter[0]?.alt).toMatch(/\S/);
+  });
+
   it("keeps the canonical and the Open Graph URL identical", () => {
     const meta = buildMetadata({ title: "About", path: "/about/" });
     expect(meta.openGraph).toMatchObject({ url: `${site.url}/about/`, siteName: site.name });
@@ -97,8 +108,13 @@ describe("JSON-LD", () => {
       "@type": "Person",
       name: site.name,
       url: site.url,
-      jobTitle: "Security Engineer",
+      // FACTS: the title at HPE. "Security Engineer" is positioning, so it must not be the jobTitle.
+      jobTitle: "SOC Analyst",
+      "@id": `${site.url}/#person`,
+      worksFor: { "@type": "Organization", name: "Hewlett Packard Enterprise" },
     });
+    expect(person.jobTitle).not.toBe("Security Engineer");
+    expect(person.description).toContain("Security Engineer");
     expect(person.sameAs).toEqual([site.github, site.linkedin, site.hashnode]);
     for (const link of person.sameAs) expect(link).toMatch(/^https:\/\//);
     expect(person.email).toBe(`mailto:${site.email}`);
@@ -134,6 +150,8 @@ describe("JSON-LD", () => {
       mainEntityOfPage: `${site.url}/writing/t/`,
       author: { "@type": "Person", name: site.name },
     });
+    // The author is the site-wide Person node, not a second, unlinked one.
+    expect(article.author["@id"]).toBe(personJsonLd()["@id"]);
     expect(plain(article)).toEqual(article);
   });
 
@@ -145,6 +163,7 @@ describe("JSON-LD", () => {
       codeRepository: "https://github.com/x/y",
     });
     expect(plain(softwareJsonLd(base))).toEqual(softwareJsonLd(base));
+    expect(softwareJsonLd(base).author["@id"]).toBe(personJsonLd()["@id"]);
   });
 });
 

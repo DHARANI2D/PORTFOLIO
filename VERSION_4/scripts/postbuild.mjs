@@ -3,11 +3,16 @@
  * Runs after `next build` (see "build" in package.json). Turns the static export in ./out into a
  * deployable, hardened site:
  *
- *   1. reads every out/**\/*.html and hashes its inline scripts (sha256)
- *   2. writes out/_headers            Content-Security-Policy + security headers (Netlify, Cloudflare Pages)
- *   3. writes out/headers.vercel.json the same headers in vercel.json format (copy it, see README)
- *   4. writes out/.well-known/security.txt (RFC 9116)
- *   5. re-reads what it wrote and fails if any page has an inline script its CSP would block
+ *   1. reads every out/**\/*.html and hashes its inline scripts, <style> elements and style
+ *      attributes (sha256)
+ *   2. puts that page's Content-Security-Policy in a <meta http-equiv> tag, first in <head>, in EVERY
+ *      html file (404.html and _not-found included). Works on any host, with or without headers.
+ *   3. writes out/_headers            the same policy plus frame-ancestors, and the security headers
+ *                                     (Netlify, Cloudflare Pages)
+ *   4. writes out/headers.vercel.json the baseline headers in vercel.json format (see README)
+ *   5. writes out/.well-known/security.txt (RFC 9116)
+ *   6. re-reads what it wrote and fails if a page lacks its policy tag, or has an inline script,
+ *      style or style attribute its policy would block
  *
  * Exits non-zero (failing the build) if out/ is missing, holds no HTML, contains inline event
  * handlers or third-party subresources, or the generated policy does not verify.
@@ -33,10 +38,15 @@ import {
   buildSecurityTxt,
   buildVercelHeaders,
   checkVercelConfig,
+  cspWeaknesses,
   pagePathFromFile,
   parseSiteConfig,
   scriptHashesOf,
+  injectCspMeta,
   securityTxtExpires,
+  styleAttrHashesOf,
+  styleHashesOf,
+  verifyCspMeta,
   verifyHeadersFile,
   verifySecurityTxt,
 } from "./lib/csp.mjs";
@@ -100,6 +110,10 @@ async function collectHtml(dir, base = dir) {
   return found.sort();
 }
 
+/**
+ * Every HTML file of the export with the hashes of what its policy has to allow. `path` is the URL
+ * the file is served at, or null for files a host never serves by name.
+ */
 async function readPages(outDir, siteOrigin) {
   const files = await collectHtml(outDir);
   if (files.length === 0) {
@@ -111,42 +125,74 @@ async function readPages(outDir, siteOrigin) {
   for (const file of files) {
     const html = await readFile(path.join(outDir, file), "utf8");
     for (const problem of auditHtml(html, { siteOrigin })) problems.push(`${file}: ${problem}`);
-    const pagePath = pagePathFromFile(file);
-    if (pagePath === null) continue;
-    pages.push({ file, path: pagePath, scriptHashes: scriptHashesOf(html) });
+    pages.push({
+      file,
+      html,
+      path: pagePathFromFile(file),
+      scriptHashes: scriptHashesOf(html),
+      styleHashes: styleHashesOf(html),
+      styleAttrHashes: styleAttrHashesOf(html),
+    });
   }
   if (problems.length > 0) {
     throw new BuildError(
       `Built HTML breaks the site's security rules:\n${problems.map((p) => `  - ${p}`).join("\n")}`,
     );
   }
-  if (pages.length === 0) throw new BuildError(`No pages found in ${outDir}.`);
-  return pages.sort((a, b) => a.path.localeCompare(b.path));
+  if (!pages.some((page) => page.path !== null)) {
+    throw new BuildError(`No pages found in ${outDir}.`);
+  }
+  return pages.sort((a, b) => a.file.localeCompare(b.file));
 }
 
-function verifyAll({ headersText, pages, securityTxt }) {
+const headerCsp = (page) => buildCsp(page);
+const metaCsp = (page) => buildCsp({ ...page, meta: true });
+
+function verifyAll({ headersText, pages, securityTxt, htmlByFile }) {
+  const metaProblems = [];
+  for (const page of pages) {
+    const html = htmlByFile.get(page.file) ?? "";
+    for (const problem of verifyCspMeta(html, metaCsp(page))) {
+      metaProblems.push(`${page.file}: ${problem}`);
+    }
+    for (const weakness of cspWeaknesses(metaCsp(page), { meta: true })) {
+      metaProblems.push(`${page.file}: meta policy: ${weakness}`);
+    }
+  }
   return [
-    ...verifyHeadersFile({ headersText, pages }),
+    ...metaProblems,
+    ...verifyHeadersFile({ headersText, pages: pages.filter((page) => page.path !== null) }),
     ...verifySecurityTxt(securityTxt).map((problem) => `security.txt: ${problem}`),
   ];
 }
 
 async function generate({ outDir, pages, site, mode }) {
-  const unique = [...new Set(pages.flatMap((page) => page.scriptHashes))].sort();
+  const unique = (key) => [...new Set(pages.flatMap((page) => page[key]))].sort();
+  const served = pages.filter((page) => page.path !== null);
 
   let headersText;
   let vercelHeaders;
   if (mode === "global") {
-    const csp = buildCsp({ scriptHashes: unique });
+    const csp = buildCsp({
+      scriptHashes: unique("scriptHashes"),
+      styleHashes: unique("styleHashes"),
+      styleAttrHashes: unique("styleAttrHashes"),
+    });
     headersText = buildHeadersFile({ csp });
     vercelHeaders = buildVercelHeaders({ csp });
   } else {
-    const perPage = pages.map((page) => ({
-      path: page.path,
-      csp: buildCsp({ scriptHashes: page.scriptHashes }),
-    }));
+    const perPage = served.map((page) => ({ path: page.path, csp: headerCsp(page) }));
     headersText = buildPageHeadersFile({ pages: perPage });
     vercelHeaders = buildVercelHeaders({ pages: perPage });
+  }
+
+  // The policy goes into the HTML itself, so a host that ignores _headers still enforces it. This
+  // happens after hashing and changes no script, so no hash moves. The tag is first in <head>.
+  const htmlByFile = new Map();
+  for (const page of pages) {
+    const html = injectCspMeta(page.html, metaCsp(page));
+    htmlByFile.set(page.file, html);
+    await writeFile(path.join(outDir, page.file), html, "utf8");
   }
 
   const expires = securityTxtExpires();
@@ -154,7 +200,7 @@ async function generate({ outDir, pages, site, mode }) {
     contact: site.email,
     expires,
     canonical: `${site.url}/.well-known/security.txt`,
-    policy: `${site.url}/privacy/`,
+    policy: `${site.url}/security/`,
   });
 
   await mkdir(path.join(outDir, ".well-known"), { recursive: true });
@@ -180,14 +226,15 @@ async function generate({ outDir, pages, site, mode }) {
   }
 
   console.log(
-    `postbuild: ${pages.length} pages, ${unique.length} unique inline script hashes (max ${Math.max(0, ...pages.map((p) => p.scriptHashes.length))} per page)`,
+    `postbuild: ${pages.length} html files, ${unique("scriptHashes").length} unique inline script hashes (max ${Math.max(0, ...pages.map((p) => p.scriptHashes.length))} per page), ${unique("styleHashes").length} inline <style> hashes, ${unique("styleAttrHashes").length} style attribute hashes (max ${Math.max(0, ...pages.map((p) => p.styleAttrHashes.length))} per page)`,
   );
+  console.log(`postbuild: wrote a Content-Security-Policy <meta> tag into ${pages.length} files`);
   console.log(`postbuild: wrote _headers (${mode} CSP, ${rules} rules, longest line ${longest})`);
   console.log("postbuild: wrote headers.vercel.json");
   console.log(`postbuild: wrote .well-known/security.txt (Expires ${expires.toISOString()})`);
   for (const warning of warnings) console.warn(`postbuild: warning: ${warning}`);
 
-  return { headersText, securityTxt, vercelHeaders };
+  return { headersText, securityTxt, vercelHeaders, htmlByFile };
 }
 
 async function main(argv, env) {
@@ -221,6 +268,7 @@ async function main(argv, env) {
       headersText: await read("_headers"),
       securityTxt: await read(path.join(".well-known", "security.txt")),
       vercelHeaders: Array.isArray(snippet?.headers) ? snippet.headers : [],
+      htmlByFile: new Map(pages.map((page) => [page.file, page.html])),
     };
   } else {
     written = await generate({ outDir: options.out, pages, site, mode: options.mode });
@@ -230,7 +278,9 @@ async function main(argv, env) {
   if (problems.length > 0) {
     throw new BuildError(`Verification failed:\n${problems.map((p) => `  - ${p}`).join("\n")}`);
   }
-  console.log(`postbuild: verified ${pages.length} pages against _headers`);
+  console.log(
+    `postbuild: verified ${pages.length} html files: policy tag in each, ${pages.filter((p) => p.path !== null).length} pages against _headers`,
+  );
 
   // A committed vercel.json that carries an old build's CSP would break every page on Vercel.
   const vercelJson = await readFile(path.join(options.root, "vercel.json"), "utf8").catch(

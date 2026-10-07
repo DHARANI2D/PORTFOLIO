@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { OPERATING_NODE_IDS, OperatingGraph } from "@/components/career/operating-graph";
+import { ContactLink } from "@/components/contact/contact-link";
 import { PageHeader, rise } from "@/components/career/page-header";
 import { Timeline } from "@/components/career/timeline";
 import { GraphActivator } from "@/components/graph/graph-context";
@@ -40,6 +41,7 @@ export default function ExperiencePage() {
           Enterprise SOC and cyber defense work: alert triage, incident response, detection
           engineering and cloud remediation. The current role comes first.
         </p>
+        <ContactLink className={cn("mt-6", rise, "delay-200")} />
       </PageHeader>
 
       <section id="timeline" aria-labelledby="timeline-heading" className="border-t py-16 md:py-24">

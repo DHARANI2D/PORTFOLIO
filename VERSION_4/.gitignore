@@ -6,5 +6,7 @@ next-env.d.ts
 playwright-report
 test-results
 .DS_Store
-.env*.local
+.env
+.env.*
+!.env.example
 .build-*

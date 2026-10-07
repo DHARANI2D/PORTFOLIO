@@ -11,7 +11,7 @@ Consequences that shape the code:
 - No route handlers (except metadata routes with `export const dynamic = "force-static"`), no server actions, no `headers()` or `cookies()`.
 - Every dynamic route has `generateStaticParams` and `export const dynamicParams = false`, so an unknown slug is a 404 and not a runtime lookup.
 - Images are not optimised at runtime (`images.unoptimized`).
-- Response headers cannot be set from Next.js, so `scripts/postbuild.mjs` generates them after the build.
+- Response headers cannot be set from Next.js, so `scripts/postbuild.mjs` generates them after the build, and also writes the Content-Security-Policy into the HTML itself so a host without header support still enforces it.
 
 ## Routing
 
@@ -101,7 +101,7 @@ Rules for these leaves: take serializable props from a server parent, render the
 3. `applyTheme` / `applyView` set the attribute, persist, and dispatch a `ds:preferences` event. `useTheme` / `useView` subscribe with `useSyncExternalStore`, with the default as the server snapshot so hydration matches.
 4. CSS does the rest. Tokens switch under `[data-theme="light"]`. In `app/globals.css`, `[data-view="recruiter"] [data-engineer-only]` and `[data-view="engineer"] [data-recruiter-only]` are `display: none !important`.
 
-The view switch never re-renders content, so it costs nothing and works with static HTML. Because the init script is the only inline executable script the site owns, its hash is the one constant entry in every page's CSP.
+The view switch never re-renders content, so it costs nothing and works with static HTML. The init script is the only inline executable script the site owns, so its hash is the one constant entry in every page's CSP.
 
 `lib/ui-events.ts` is a tiny window-event bus (`ds:open-palette`, `ds:open-terminal`) so the header, footer and palette can open overlays without prop drilling.
 
@@ -135,22 +135,28 @@ pnpm build
  +-- node scripts/postbuild.mjs
        1. read lib/site.ts            email and canonical origin (NEXT_PUBLIC_SITE_URL overrides)
        2. walk out/**/*.html          audit: inline handlers, javascript: URLs, other-origin subresources
-       3. hash inline scripts         sha256 per page, JSON-LD and external scripts excluded
-       4. write out/_headers          baseline headers on /*, a CSP per page, cache and content-type rules
-       5. write out/headers.vercel.json
-       6. write out/.well-known/security.txt
-       7. verify what it wrote        every inline script allowed, no unsafe script source, headers present
-       8. compare vercel.json         fail on Vercel if it carries a stale CSP
+       3. hash inline content         sha256 per file: inline scripts, <style> elements, style="" attribute values.
+                                      JSON-LD and external scripts excluded
+       4. write the policy into HTML  <meta http-equiv="Content-Security-Policy"> first in <head> (after
+                                      <meta charset>) of EVERY html file, 404.html and _not-found included
+       5. write out/_headers          baseline headers on /*, a CSP per page (with frame-ancestors), cache and
+                                      content-type rules
+       6. write out/headers.vercel.json
+       7. write out/.well-known/security.txt   Policy points at /security/
+       8. verify what it wrote        every file has exactly one policy tag, first in <head>, equal to its page's
+                                      policy; every inline script, style and attribute allowed; no unsafe source
+                                      anywhere; headers present
+       9. compare vercel.json         fail on Vercel if it carries a stale CSP
 ```
 
-`scripts/lib/csp.mjs` holds all the logic as pure functions (tokenising HTML, hashing, building and parsing policies and `_headers`, security.txt, the site-config parser). `postbuild.mjs` only reads and writes files, which is what makes both testable. `node scripts/postbuild.mjs --check` runs steps 1 to 3, 7 and 8 against an existing `out/`.
+`scripts/lib/csp.mjs` holds all the logic as pure functions (tokenising HTML, hashing, building and parsing policies and `_headers`, security.txt, the site-config parser). `postbuild.mjs` only reads and writes files, which is what makes both testable. `node scripts/postbuild.mjs --check` runs the reading and verification steps (1, 2, 3, 8 and 9) against an existing `out/`, without writing. The tag insertion is idempotent: an earlier tag is replaced, and it changes no script, so no hash moves.
 
 Do not edit `out/` after post-build, and do not let the host rewrite it: the hashes would no longer match.
 
 ## Tests
 
 - `tests/unit` (Vitest): content integrity and claims, CSP and headers, `postbuild.mjs` end to end against fixture exports, the fuzzy matcher, the terminal interpreter, the search index and palette model, preferences and the init script, SEO helpers and JSON-LD escaping, the build-log selector, reading time, the sitemap, robots and manifest, the OG image render, and the e2e static server.
-- `tests/e2e` (Playwright): run against `out/` through `tests/e2e/static-server.mjs`, which applies `out/_headers` (minus `upgrade-insecure-requests`, which would rewrite same-origin requests on plain http). Routes are discovered from `out/sitemap.xml`. `helpers.ts` waits for hydration by opening and closing the palette through its own idempotent event, because a key pressed before hydration is lost.
+- `tests/e2e` (Playwright): run against `out/` through `tests/e2e/static-server.mjs`, which applies `out/_headers` and serves each page's policy tag (minus `upgrade-insecure-requests` in both, which would rewrite same-origin requests on plain http; `--csp-header off` drops the header to test the tag alone). Routes are discovered from `out/sitemap.xml`. `fixtures.ts` exports a `test` that fails on any CSP violation (the DOM event and policy console errors). `tests/e2e/tsconfig.json` type-checks the specs as part of `pnpm typecheck`. `helpers.ts` waits for hydration by opening and closing the palette through its own idempotent event, because a key pressed before hydration is lost.
 
 ## Where to change what
 

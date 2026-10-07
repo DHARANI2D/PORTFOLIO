@@ -6,7 +6,7 @@ export function ContactSection() {
   return (
     <Section
       id="contact"
-      index="07"
+      autoNumber
       label="CONTACT"
       title={contactCopy.heading}
       intro={contactCopy.intro}

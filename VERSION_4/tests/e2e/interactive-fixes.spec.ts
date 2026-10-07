@@ -282,7 +282,10 @@ test.describe("security graph geometry", () => {
     }
     const wide = await labelDisplays(1400);
     expect(wide.length).toBeGreaterThan(0);
-    expect(wide.filter((display) => display === "none"), "1400px").toEqual([]);
+    expect(
+      wide.filter((display) => display === "none"),
+      "1400px",
+    ).toEqual([]);
   });
 });
 

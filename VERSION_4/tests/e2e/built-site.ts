@@ -70,6 +70,7 @@ const STATIC_ROUTES = [
   "/resume/",
   "/contact/",
   "/privacy/",
+  "/security/",
 ] as const;
 
 /** The pages a visitor is most likely to see: every top-level page and one of each detail page. */

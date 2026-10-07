@@ -44,7 +44,7 @@ function NoteRow({ post }: { post: WritingPost }) {
 
         <div className="md:col-span-6">
           <h3 className="text-xl headline md:text-2xl">{meta.title}</h3>
-          <p className="mt-2 line-clamp-2 text-muted">{meta.summary}</p>
+          <p className="mt-2 text-muted">{meta.summary}</p>
         </div>
 
         <div className="flex items-center justify-between gap-4 md:col-span-3 md:justify-end">

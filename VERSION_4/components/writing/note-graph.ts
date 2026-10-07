@@ -22,7 +22,8 @@ const NODE_BY_TAG: Record<string, GraphNodeId> = {
 export function graphNodesForTags(tags: readonly string[]): GraphNodeId[] {
   const nodes = new Set<GraphNodeId>();
   for (const tag of tags) {
-    const node = NODE_BY_TAG[tag.trim().toLowerCase()];
+    const key = tag.trim().toLowerCase();
+    const node = Object.hasOwn(NODE_BY_TAG, key) ? NODE_BY_TAG[key] : undefined;
     if (node) nodes.add(node);
   }
   return [...nodes];

@@ -244,8 +244,27 @@ test.describe("_headers", () => {
       expect(directives.get("frame-ancestors")).toEqual(["'none'"]);
       expect(directives.get("object-src")).toEqual(["'none'"]);
       expect(directives.get("base-uri")).toEqual(["'self'"]);
-      expect(directives.get("img-src")).toEqual(["'self'", "data:"]);
+      expect(directives.get("img-src")).toEqual(["'self'"]);
       expect(directives.get("connect-src")).toEqual(["'self'"]);
+      // Styles: hashes only. Every inline style attribute value on the page is allowed by hash.
+      expect(directives.get("style-src")).toEqual(["'self'"]);
+      const attrHashes = directives.get("style-src-attr") ?? [];
+      const styleAttrs = new Set(
+        [...page.html.matchAll(/\sstyle="([^"]*)"/g)].map((m) =>
+          (m[1] ?? "")
+            .replace(/&quot;/g, '"')
+            .replace(/&#x27;/g, "'")
+            .replace(/&amp;/g, "&"),
+        ),
+      );
+      if (styleAttrs.size === 0) expect(attrHashes).toEqual([]);
+      else {
+        expect(attrHashes[0]).toBe("'unsafe-hashes'");
+        for (const value of styleAttrs) {
+          expect(attrHashes, `hash of style="${value.slice(0, 40)}"`).toContain(sha256(value));
+        }
+        expect(attrHashes).not.toContain("'unsafe-inline'");
+      }
     });
   }
 
@@ -280,6 +299,13 @@ test.describe("security.txt", () => {
     expect(expires).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/);
     expect(new Date(expires).getTime()).toBeGreaterThan(Date.now());
     expect(text).toMatch(/^Canonical:\s*https:\/\/\S+\/\.well-known\/security\.txt$/m);
+  });
+
+  test("Policy points at the security page, which exists and is in the sitemap", () => {
+    const policy = /^Policy:\s*(\S+)$/m.exec(readOut(".well-known/security.txt"))?.[1] ?? "";
+    expect(new URL(policy).pathname).toBe("/security/");
+    expect(walkOut()).toContain("security/index.html");
+    expect(readOut("sitemap.xml")).toContain("/security/</loc>");
   });
 
   test("the contact address is the one published on the site", () => {

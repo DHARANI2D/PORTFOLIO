@@ -1,5 +1,5 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./fixtures";
 import { THEME_KEY, VIEW_KEY, type Theme, type View } from "../../lib/preferences";
 import { keyRoutes } from "./built-site";
 import { closeMenu, openMenuIfPresent, waitForHydration } from "./helpers";

@@ -52,6 +52,6 @@ Home order: hero → 01 SIGNAL → 02 SYSTEMS ("Systems, not demos.") → 03 EXP
 
 - Static export, Server Components by default, minimal client JS. LCP < 2.0 s, CLS ≈ 0, excellent INP.
 - WCAG 2.2 AA: keyboard, visible focus, semantic HTML, reduced motion, contrast, labelled controls, accessible dialogs/palette.
-- Security of the site itself: hash-based CSP (no `unsafe-inline` for scripts), HSTS, nosniff, Referrer-Policy, Permissions-Policy, no third-party scripts/CDN/analytics, `security.txt`, honest privacy page.
+- Security of the site itself: hash-based CSP in the HTML of every page and in headers (no `unsafe-inline` for scripts or styles), HSTS, nosniff, Referrer-Policy, Permissions-Policy, no third-party scripts/CDN/analytics, `security.txt`, honest privacy page.
 - SEO: titles, descriptions, canonical, OpenGraph/Twitter, JSON-LD (Person, WebSite, Article, SoftwareSourceCode), sitemap, robots, manifest, OG image without a face.
 - Content lives in typed data + MDX, validated at build; repo tidy with tests (Vitest + Playwright) and CI.

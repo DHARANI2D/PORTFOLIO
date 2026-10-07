@@ -35,8 +35,8 @@ const STORED = [
   },
   {
     key: "ds-boot-typed",
-    where: "sessionStorage",
-    what: "A flag so the home page intro plays once per browser tab session. It is gone when the tab closes.",
+    where: "localStorage",
+    what: "A flag so the home page intro plays once per browser, on your first visit only.",
   },
 ] as const;
 

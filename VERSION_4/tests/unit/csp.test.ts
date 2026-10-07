@@ -7,6 +7,13 @@ import {
   BASELINE_HEADERS,
   auditHtml,
   buildCsp,
+  buildCspMetaTag,
+  extractInlineStyles,
+  extractStyleAttributes,
+  injectCspMeta,
+  styleAttrHashesOf,
+  styleHashesOf,
+  verifyCspMeta,
   buildHeadersFile,
   buildPageHeadersFile,
   buildSecurityTxt,
@@ -115,7 +122,7 @@ describe("buildCsp", () => {
 
   it("has every directive the policy promises", () => {
     expect(directives.get("default-src")).toEqual(["'self'"]);
-    expect(directives.get("img-src")).toEqual(["'self'", "data:"]);
+    expect(directives.get("img-src")).toEqual(["'self'"]);
     expect(directives.get("font-src")).toEqual(["'self'"]);
     expect(directives.get("connect-src")).toEqual(["'self'"]);
     expect(directives.get("frame-ancestors")).toEqual(["'none'"]);
@@ -124,10 +131,35 @@ describe("buildCsp", () => {
     expect(directives.has("upgrade-insecure-requests")).toBe(true);
   });
 
-  it("keeps style-src permissive for inline style attributes, and only there", () => {
-    expect(directives.get("style-src")).toEqual(["'self'", "'unsafe-inline'"]);
+  it("never allows 'unsafe-inline' anywhere, styles included", () => {
+    expect(directives.get("style-src")).toEqual(["'self'"]);
+    expect(directives.has("style-src-attr")).toBe(false);
     const withInline = [...directives].filter(([, sources]) => sources.includes("'unsafe-inline'"));
-    expect(withInline.map(([name]) => name)).toEqual(["style-src"]);
+    expect(withInline).toEqual([]);
+    expect(csp).not.toContain("data:");
+  });
+
+  it("allows style attributes and <style> elements by hash only, and only on pages that have them", () => {
+    const attrHash = hashScript("--shiki-light:#24292e;--shiki-dark:#e6edf3");
+    const elementHash = hashScript("a{color:red}");
+    const withStyles = parseCsp(
+      buildCsp({
+        scriptHashes: [],
+        styleHashes: [elementHash],
+        styleAttrHashes: [attrHash, attrHash],
+      }),
+    );
+    expect(withStyles.get("style-src")).toEqual(["'self'", elementHash]);
+    expect(withStyles.get("style-src-attr")).toEqual(["'unsafe-hashes'", attrHash]);
+    for (const sources of withStyles.values()) expect(sources).not.toContain("'unsafe-inline'");
+  });
+
+  it("builds the <meta> variant without frame-ancestors, which a browser ignores there", () => {
+    const meta = buildCsp({ scriptHashes: [SPEC_HASH], meta: true });
+    expect(parseCsp(meta).has("frame-ancestors")).toBe(false);
+    // Everything else is identical, so a header and a tag on the same page never disagree.
+    const header = buildCsp({ scriptHashes: [SPEC_HASH] }).replace("frame-ancestors 'none'; ", "");
+    expect(meta).toBe(header);
   });
 
   it("lets forms leave the page only for the visitor's own mail client", () => {
@@ -150,6 +182,113 @@ describe("buildCsp", () => {
     ]) {
       expect(() => buildCsp({ scriptHashes: [bad] }), bad).toThrow(/Invalid CSP hash/);
     }
+  });
+});
+
+describe("style extraction", () => {
+  const html = `<head><style>a{color:red}</style></head><body>
+<p style="--a:1;--b:&quot;x&quot;">x</p><i style="--a:1;--b:&quot;x&quot;"></i><b style="  "></b><u style="top:0"></u>
+<script>var s='<p style="not-a-tag">'</script></body>`;
+
+  it("finds <style> element bodies and decoded style attribute values, not text inside scripts", () => {
+    expect(extractInlineStyles(html)).toEqual(["a{color:red}"]);
+    expect(extractStyleAttributes(html)).toEqual(['--a:1;--b:"x"', '--a:1;--b:"x"', "top:0"]);
+  });
+
+  it("hashes each distinct value once, in the form the browser hashes it", () => {
+    const hashes = styleAttrHashesOf(html);
+    expect(hashes).toHaveLength(2);
+    expect(hashes).toContain(hashScript('--a:1;--b:"x"'));
+    expect(styleHashesOf(html)).toEqual([hashScript("a{color:red}")]);
+    expect(styleAttrHashesOf("<p>none</p>")).toEqual([]);
+  });
+});
+
+describe("Content-Security-Policy <meta> tag", () => {
+  const policy = buildCsp({ scriptHashes: [SPEC_HASH], meta: true });
+  const doc = `<!DOCTYPE html><html><head><meta charSet="utf-8"/><title>t</title></head><body><meta name="x" content="y"/></body></html>`;
+
+  it("goes right after a leading charset tag and before everything else in <head>", () => {
+    const out = injectCspMeta(doc, policy);
+    expect(out).toContain(`<head><meta charSet="utf-8"/>${buildCspMetaTag(policy)}<title>`);
+    expect(verifyCspMeta(out, policy)).toEqual([]);
+  });
+
+  it("goes first when there is no charset tag, and is idempotent", () => {
+    const bare = "<html><head><title>t</title></head><body></body></html>";
+    const once = injectCspMeta(bare, policy);
+    expect(once).toContain(`<head>${buildCspMetaTag(policy)}<title>`);
+    expect(injectCspMeta(once, policy)).toBe(once);
+    // A policy from an earlier build is replaced, never stacked.
+    const other = buildCsp({ scriptHashes: [], meta: true });
+    const swapped = injectCspMeta(once, other);
+    expect(swapped.match(/Content-Security-Policy/g)).toHaveLength(1);
+    expect(verifyCspMeta(swapped, other)).toEqual([]);
+    expect(verifyCspMeta(swapped, policy).join()).toContain("does not match");
+  });
+
+  it("does not alter any inline script, so no hash moves", () => {
+    const withScripts = page();
+    const out = injectCspMeta(withScripts, policy);
+    expect(scriptHashesOf(out)).toEqual(scriptHashesOf(withScripts));
+  });
+
+  it("keeps other meta tags and escapes the attribute value", () => {
+    const out = injectCspMeta(doc, policy);
+    expect(out).toContain('<meta name="x" content="y"/>');
+    expect(buildCspMetaTag(`a"b<c&d`)).toContain('content="a&quot;b&lt;c&amp;d"');
+  });
+
+  it("refuses a document with no <head>", () => {
+    expect(() => injectCspMeta("<p>fragment</p>", policy)).toThrow(/no <head>/);
+  });
+
+  it("is reported when missing, doubled, not first in <head>, or for another page", () => {
+    expect(verifyCspMeta(doc, policy)).toEqual(["no Content-Security-Policy <meta> tag"]);
+    const good = injectCspMeta(doc, policy);
+    expect(
+      verifyCspMeta(good.replace("</head>", `${buildCspMetaTag(policy)}</head>`), policy).join(),
+    ).toContain("2 Content-Security-Policy");
+    const late = injectCspMeta(doc, policy)
+      .replace(buildCspMetaTag(policy), "")
+      .replace("</head>", `${buildCspMetaTag(policy)}</head>`);
+    expect(verifyCspMeta(late, policy).join()).toContain("not the first element");
+    expect(verifyCspMeta(good, buildCsp({ scriptHashes: [], meta: true })).join()).toContain(
+      "does not match",
+    );
+  });
+
+  it("finds the tag whatever the case of the attribute, as a browser does", () => {
+    const upper = `<html><head><META HTTP-EQUIV="content-security-policy" CONTENT="${policy}"></head></html>`;
+    expect(verifyCspMeta(upper, policy)).toEqual([]);
+    expect(injectCspMeta(upper, policy).match(/content-security-policy/gi)).toHaveLength(1);
+  });
+});
+
+describe("cspWeaknesses: styles", () => {
+  const ok = buildCsp({ scriptHashes: [SPEC_HASH] });
+  it("rejects unsafe-inline and unknown sources in any style directive", () => {
+    expect(cspWeaknesses(ok)).toEqual([]);
+    expect(
+      cspWeaknesses(ok.replace("style-src 'self'", "style-src 'self' 'unsafe-inline'")),
+    ).toContain("style-src allows 'unsafe-inline'");
+    expect(cspWeaknesses(`${ok}; style-src-attr 'unsafe-inline'`).join()).toContain(
+      "style-src-attr allows 'unsafe-inline'",
+    );
+    expect(
+      cspWeaknesses(ok.replace("style-src 'self'", "style-src 'self' https:")).join(),
+    ).toContain("style-src allows an unexpected source: https:");
+    expect(cspWeaknesses(ok.replace("img-src 'self'", "img-src 'self' data:")).join()).toContain(
+      "img-src",
+    );
+  });
+
+  it("allows frame-ancestors in a header and forbids it in a meta tag", () => {
+    expect(cspWeaknesses(ok, { meta: true }).join()).toContain("frame-ancestors");
+    expect(cspWeaknesses(buildCsp({ scriptHashes: [], meta: true }), { meta: true })).toEqual([]);
+    expect(cspWeaknesses(buildCsp({ scriptHashes: [], meta: true })).join()).toContain(
+      "frame-ancestors",
+    );
   });
 });
 
@@ -339,7 +478,9 @@ describe("pagePathFromFile", () => {
     ["systems/witness/index.html", "/systems/witness/"],
     ["systems\\witness\\index.html", "/systems/witness/"],
     ["404.html", "/404.html"],
-    ["_not-found/index.html", null],
+    ["_not-found/index.html", "/_not-found/"],
+    ["_next/static/x.html", null],
+    ["_next/_not-found/index.html", null],
     ["_next/static/x.html", null],
     ["robots.txt", null],
   ])("%s -> %s", (file, expected) => {
@@ -443,7 +584,7 @@ describe("security.txt", () => {
     contact: "dharanidharan2d@gmail.com",
     expires: securityTxtExpires(now),
     canonical: "https://example.com/.well-known/security.txt",
-    policy: "https://example.com/privacy/",
+    policy: "https://example.com/security/",
   };
 
   it("expires just under a year from the build, in UTC, as RFC 9116 recommends", () => {
@@ -457,7 +598,7 @@ describe("security.txt", () => {
       "Expires: 2027-10-03T12:00:00Z",
       "Preferred-Languages: en",
       "Canonical: https://example.com/.well-known/security.txt",
-      "Policy: https://example.com/privacy/",
+      "Policy: https://example.com/security/",
       "",
     ]);
   });
@@ -591,8 +732,71 @@ describe("postbuild script", () => {
     const securityTxt = fs.readFileSync(path.join(out, ".well-known/security.txt"), "utf8");
     expect(securityTxt).toContain(`Contact: mailto:${site.email}`);
     expect(securityTxt).toContain("Canonical: https://example.com/.well-known/security.txt");
-    expect(securityTxt).toContain("Policy: https://example.com/privacy/");
+    expect(securityTxt).toContain("Policy: https://example.com/security/");
     expect(verifySecurityTxt(securityTxt)).toEqual([]);
+  });
+
+  it("puts the policy into EVERY html file, error pages and _not-found included", () => {
+    const out = fixture({ ...site3, "_not-found/index.html": page("<p>nf</p>") });
+    expect(run(out).status).toBe(0);
+    for (const file of ["index.html", "about/index.html", "404.html", "_not-found/index.html"]) {
+      const html = fs.readFileSync(path.join(out, file), "utf8");
+      const expected = buildCsp({ scriptHashes: scriptHashesOf(html), meta: true });
+      expect(verifyCspMeta(html, expected), file).toEqual([]);
+    }
+    // The header side covers /_not-found/ too.
+    const rules = parseHeadersFile(fs.readFileSync(path.join(out, "_headers"), "utf8"));
+    expect(rules.map((r) => r.path)).toContain("/_not-found/");
+  });
+
+  it("hashes style attributes and <style> elements instead of allowing 'unsafe-inline'", () => {
+    const out = fixture({
+      ...site3,
+      "styled/index.html": page(`<style>p{margin:0}</style><i style="--a:1">x</i>`),
+    });
+    const result = run(out);
+    expect(result.status, result.stderr).toBe(0);
+    const rules = parseHeadersFile(fs.readFileSync(path.join(out, "_headers"), "utf8"));
+    const policy = (route: string) =>
+      parseCsp(
+        headersForPath(rules, route).find(([n]) => n === "Content-Security-Policy")?.[1] ?? "",
+      );
+    expect(policy("/styled/").get("style-src")).toEqual(["'self'", hashScript("p{margin:0}")]);
+    expect(policy("/styled/").get("style-src-attr")).toEqual([
+      "'unsafe-hashes'",
+      hashScript("--a:1"),
+    ]);
+    // A page with no inline style gets neither.
+    expect(policy("/about/").get("style-src")).toEqual(["'self'"]);
+    expect(policy("/about/").has("style-src-attr")).toBe(false);
+    expect(fs.readFileSync(path.join(out, "styled/index.html"), "utf8")).toContain(
+      `style-src-attr 'unsafe-hashes' ${hashScript("--a:1")}`,
+    );
+  });
+
+  it("--check fails when a page loses its policy tag or the tag is edited", () => {
+    const out = fixture(site3);
+    expect(run(out).status).toBe(0);
+    const file = path.join(out, "404.html");
+    const built = fs.readFileSync(file, "utf8");
+
+    fs.writeFileSync(file, built.replace(/<meta http-equiv="Content-Security-Policy"[^>]*>/, ""));
+    const missing = run(out, "--check");
+    expect(missing.status).toBe(1);
+    expect(missing.stderr).toContain("404.html: no Content-Security-Policy <meta> tag");
+
+    fs.writeFileSync(file, built.replace("default-src 'self'", "default-src *"));
+    const edited = run(out, "--check");
+    expect(edited.status).toBe(1);
+    expect(edited.stderr).toContain("does not match");
+  });
+
+  it("running it twice yields the same files (the tag is replaced, not stacked)", () => {
+    const out = fixture(site3);
+    expect(run(out).status).toBe(0);
+    const first = fs.readFileSync(path.join(out, "index.html"), "utf8");
+    expect(run(out).status).toBe(0);
+    expect(fs.readFileSync(path.join(out, "index.html"), "utf8")).toBe(first);
   });
 
   it("global mode writes one /* policy holding every hash", () => {

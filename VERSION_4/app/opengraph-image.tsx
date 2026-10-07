@@ -1,3 +1,5 @@
+import { readFile } from "node:fs/promises";
+import path from "node:path";
 import { ImageResponse } from "next/og";
 import { site } from "@/lib/site";
 
@@ -16,6 +18,29 @@ const COLOR = {
   border: "#242424",
   accent: "#8b5cf6",
 } as const;
+
+/**
+ * Satori reads TrueType, OpenType and WOFF, not WOFF2, and the site's own fonts are WOFF2 files made
+ * by next/font. The `geist` package also ships the TTF sources, so the card uses the same faces as
+ * the site. A missing file fails the build: a card in a fallback face would go unnoticed.
+ */
+const FONT_DIR = path.join(process.cwd(), "node_modules", "geist", "dist", "fonts");
+
+async function loadFonts() {
+  const [sans, mono] = await Promise.all([
+    readFile(path.join(FONT_DIR, "geist-sans", "Geist-Regular.ttf")),
+    readFile(path.join(FONT_DIR, "geist-mono", "GeistMono-Regular.ttf")),
+  ]);
+  const toBuffer = (file: Buffer) =>
+    file.buffer.slice(file.byteOffset, file.byteOffset + file.byteLength) as ArrayBuffer;
+  return [
+    { name: "Geist", data: toBuffer(sans), weight: 400 as const, style: "normal" as const },
+    { name: "Geist Mono", data: toBuffer(mono), weight: 400 as const, style: "normal" as const },
+  ];
+}
+
+const SANS = "Geist";
+const MONO = "Geist Mono";
 
 /** A small security graph: nodes joined by edges, one of them ringed like the Helios mark. */
 const NODES = [
@@ -75,7 +100,7 @@ function Glyph() {
   );
 }
 
-export default function OpengraphImage() {
+export default async function OpengraphImage() {
   const host = new URL(site.url).hostname;
 
   return new ImageResponse(
@@ -89,12 +114,14 @@ export default function OpengraphImage() {
         padding: 80,
         background: COLOR.background,
         color: COLOR.foreground,
+        fontFamily: SANS,
       }}
     >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
         <div
           style={{
             display: "flex",
+            fontFamily: MONO,
             fontSize: 24,
             letterSpacing: 4,
             color: COLOR.muted,
@@ -109,6 +136,7 @@ export default function OpengraphImage() {
         <div
           style={{
             display: "flex",
+            fontFamily: MONO,
             fontSize: 30,
             letterSpacing: 5,
             color: COLOR.muted,
@@ -132,6 +160,7 @@ export default function OpengraphImage() {
           style={{
             display: "flex",
             marginTop: 32,
+            fontFamily: MONO,
             fontSize: 28,
             letterSpacing: 3,
             color: COLOR.accent,
@@ -147,6 +176,7 @@ export default function OpengraphImage() {
           marginTop: 48,
           paddingTop: 24,
           borderTop: `1px solid ${COLOR.border}`,
+          fontFamily: MONO,
           fontSize: 24,
           letterSpacing: 3,
           color: COLOR.muted,
@@ -155,6 +185,6 @@ export default function OpengraphImage() {
         {host}
       </div>
     </div>,
-    { ...size },
+    { ...size, fonts: await loadFonts() },
   );
 }

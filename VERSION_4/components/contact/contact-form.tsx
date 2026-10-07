@@ -2,14 +2,16 @@
 
 import { useId, useState, type FormEvent } from "react";
 import { ChevronDown } from "lucide-react";
-import { MESSAGE_MAX, PURPOSES, composeMailto } from "@/components/contact/mailto";
+import { MESSAGE_MAX, PURPOSES, composeMailto, fitsMailto } from "@/components/contact/mailto";
+import { emailHref } from "@/components/career/mailto";
 import { Button } from "@/components/ui/button";
 import { site } from "@/lib/site";
 
 const labelClass = "mb-2 block label-mono text-muted";
 // 16px text stops iOS zooming on focus. user-invalid only styles a field after the visitor touched it.
+// border-muted (not the hairline border tokens) keeps the field edge at 3:1 or better in both themes (WCAG 1.4.11).
 const controlClass =
-  "block min-h-11 w-full rounded-md border focus-visible:rounded-md border-border-strong bg-background px-3 py-3 text-base text-foreground transition-colors duration-200 hover:border-muted user-invalid:border-foreground motion-reduce:transition-none";
+  "block min-h-11 w-full rounded-md border focus-visible:rounded-md border-muted bg-background px-3 py-3 text-base text-foreground transition-colors duration-200 hover:border-foreground user-invalid:border-foreground motion-reduce:transition-none";
 
 /** `required` lets whitespace through. Treat a blank name or message as missing. */
 function flagBlankFields(form: HTMLFormElement): boolean {
@@ -39,6 +41,8 @@ type ContactFormProps = {
 export function ContactForm({ titleAs: Title = "h3" }: ContactFormProps) {
   const uid = useId();
   const [status, setStatus] = useState("");
+  // Shown with a direct email link, so a message that cannot be passed on still has a way out.
+  const [showDirect, setShowDirect] = useState(false);
 
   function handleInput(event: FormEvent<HTMLFormElement>) {
     const target = event.target;
@@ -51,6 +55,7 @@ export function ContactForm({ titleAs: Title = "h3" }: ContactFormProps) {
     event.preventDefault();
     const form = event.currentTarget;
 
+    setShowDirect(false);
     if (!flagBlankFields(form)) {
       form.reportValidity();
       setStatus("Check the highlighted fields. Nothing was opened.");
@@ -71,10 +76,16 @@ export function ContactForm({ titleAs: Title = "h3" }: ContactFormProps) {
         purpose: text("purpose"),
         message: text("message"),
       });
+      if (!fitsMailto(url)) {
+        setStatus("Too long for an email link. Shorten the message or email me directly.");
+        setShowDirect(true);
+        return;
+      }
       setStatus(`Opening your email client. If nothing opens, write to ${site.email}.`);
       window.location.href = url;
     } catch {
       setStatus(`Could not build the message. Write to ${site.email} directly.`);
+      setShowDirect(true);
     }
   }
 
@@ -183,6 +194,17 @@ export function ContactForm({ titleAs: Title = "h3" }: ContactFormProps) {
 
       <p role="status" aria-live="polite" className="mt-4 min-h-6 text-sm text-muted">
         {status}
+        {showDirect ? (
+          <>
+            {" "}
+            <a
+              href={emailHref}
+              className="text-foreground underline decoration-border-strong underline-offset-4 hover:decoration-foreground"
+            >
+              {site.email}
+            </a>
+          </>
+        ) : null}
       </p>
     </form>
   );

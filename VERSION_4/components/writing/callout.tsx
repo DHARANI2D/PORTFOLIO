@@ -29,7 +29,7 @@ export function Callout({
   title?: string;
   children: React.ReactNode;
 }) {
-  const kind = KINDS[type] ?? KINDS.note;
+  const kind = Object.hasOwn(KINDS, type) ? KINDS[type] : KINDS.note;
 
   return (
     <div

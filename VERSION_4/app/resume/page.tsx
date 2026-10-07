@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { ContactLink } from "@/components/contact/contact-link";
 import { PageHeader, rise } from "@/components/career/page-header";
 import { GraphActivator } from "@/components/graph/graph-context";
 import { PrintButton } from "@/components/resume/print-button";
@@ -47,6 +48,7 @@ export default function ResumePage() {
           The PDF downloads from Google Drive. The preview below is built from this site&apos;s
           content.
         </p>
+        <ContactLink lead="Want to talk about a role?" className="mt-4" />
       </PageHeader>
 
       <section

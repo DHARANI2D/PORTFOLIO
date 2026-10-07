@@ -19,3 +19,38 @@ export function firstSentence(text: string, max = 200): string {
 /** Only https URLs become links; anything else in content is ignored rather than rendered. */
 export const isHttps = (url: string | undefined): url is string =>
   typeof url === "string" && /^https:\/\//i.test(url);
+
+const SENTENCE_END = /[.!?]["”’']?$/;
+
+/**
+ * A meta description that always ends on a complete thought. An explicit `metaDescription` wins.
+ * Otherwise whole sentences are taken from `text` while they fit in `max` characters; if even the
+ * first sentence is too long, it is cut at the last clause break (comma, semicolon, colon or dash)
+ * or word that fits and closed with a full stop. Never an ellipsis.
+ */
+export function metaDescription(text: string, explicit?: string, max = 155): string {
+  const given = explicit?.replace(/\s+/g, " ").trim();
+  if (given && given.length <= max + 5 && SENTENCE_END.test(given)) return given;
+
+  const clean = text.replace(/\s+/g, " ").trim();
+  if (clean.length <= max && SENTENCE_END.test(clean)) return clean;
+
+  let out = "";
+  for (const sentence of clean.match(/[^.!?]+[.!?]["”’']?(?=\s|$)/g) ?? []) {
+    const next = out ? `${out} ${sentence.trim()}` : sentence.trim();
+    if (next.length > max) break;
+    out = next;
+  }
+  if (out) return out;
+
+  const cut = clean.slice(0, max - 1);
+  const clause = Math.max(
+    cut.lastIndexOf(", "),
+    cut.lastIndexOf("; "),
+    cut.lastIndexOf(": "),
+    cut.lastIndexOf(" — "),
+  );
+  const space = cut.lastIndexOf(" ");
+  const end = clause > max / 2 ? clause : space > 0 ? space : cut.length;
+  return `${cut.slice(0, end).replace(/[\s,;:.—-]+$/, "")}.`;
+}

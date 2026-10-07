@@ -29,6 +29,15 @@ type ContactLink = {
 // The form title sits one level below whatever heading introduces the block.
 const FORM_TITLE_LEVEL = { h1: "h2", h2: "h3", h3: "h4" } as const;
 
+/**
+ * "in/name" from a LinkedIn profile URL, without the trailing numeric-ish id LinkedIn appends
+ * (nine hex characters). Short enough to stay on one line at 320px; the link still goes to the
+ * full profile URL.
+ */
+export function linkedinHandle(url: string): string {
+  return new URL(url).pathname.replace(/^\/+|\/+$/g, "").replace(/-[0-9a-f]{9}$/i, "");
+}
+
 function contactLinks(): ContactLink[] {
   return [
     {
@@ -40,7 +49,7 @@ function contactLinks(): ContactLink[] {
     },
     {
       label: "LINKEDIN",
-      value: new URL(site.linkedin).pathname.replace(/^\/+|\/+$/g, ""),
+      value: linkedinHandle(site.linkedin),
       href: site.linkedin,
       external: true,
     },
@@ -67,7 +76,7 @@ function ContactRow({ link }: { link: ContactLink }) {
       >
         {/* Mobile: label above the value, so a long address gets the full row width. */}
         <Label className="col-span-2 md:col-span-1">{link.label}</Label>
-        <span className="min-w-0 font-mono text-sm [overflow-wrap:anywhere] text-foreground transition-colors duration-200 group-hover:text-accent motion-reduce:transition-none md:text-lg">
+        <span className="min-w-0 font-mono text-[0.8125rem] [overflow-wrap:anywhere] text-foreground transition-colors duration-200 group-hover:text-accent motion-reduce:transition-none sm:text-sm md:text-lg">
           {link.value}
         </span>
         <ArrowUpRight

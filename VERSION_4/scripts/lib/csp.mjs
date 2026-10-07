@@ -102,6 +102,33 @@ export function extractInlineScripts(html) {
   return scripts;
 }
 
+/**
+ * Bodies of inline `<style>` elements. A browser applies them, so `style-src` must allow each one.
+ * @param {string} html
+ * @returns {string[]}
+ */
+export function extractInlineStyles(html) {
+  const styles = [];
+  for (const tag of iterateTags(html)) {
+    if (tag.name === "style" && tag.body !== undefined) styles.push(tag.body);
+  }
+  return styles;
+}
+
+/**
+ * Values of every `style="..."` attribute, entities decoded, which is the text a browser hashes.
+ * @param {string} html
+ * @returns {string[]}
+ */
+export function extractStyleAttributes(html) {
+  const values = [];
+  for (const tag of iterateTags(html)) {
+    const value = tag.attrs.style;
+    if (value !== undefined && value.trim() !== "") values.push(value);
+  }
+  return values;
+}
+
 /** Tags and attributes that load a subresource. A cross-origin value is blocked by the CSP. */
 const RESOURCE_ATTRS = [
   ["script", "src"],
@@ -217,38 +244,67 @@ export function scriptHashesOf(html) {
 }
 
 /**
+ * Inline `<style>` elements in `html` as unique, sorted hash sources (the same algorithm as scripts).
+ * @param {string} html
+ * @returns {string[]}
+ */
+export function styleHashesOf(html) {
+  return [...new Set(extractInlineStyles(html).map(hashScript))].sort();
+}
+
+/**
+ * Distinct `style="..."` attribute values in `html` as unique, sorted hash sources. They are
+ * allowed through `style-src-attr 'unsafe-hashes'`.
+ * @param {string} html
+ * @returns {string[]}
+ */
+export function styleAttrHashesOf(html) {
+  return [...new Set(extractStyleAttributes(html).map(hashScript))].sort();
+}
+
+/**
  * Builds the policy. `script-src` is `'self'` plus the given hashes. It never contains
  * 'unsafe-inline', 'unsafe-eval' or a host.
  *
- * `style-src` keeps 'unsafe-inline' on purpose. React and Motion emit inline `style` attributes
- * (positions, transforms, CSS variables). A hash source cannot allow an attribute without
- * 'unsafe-hashes', and the set of values is open-ended, so style attributes need 'unsafe-inline'.
- * The risk is bounded: CSS cannot execute script, `script-src` still blocks every injected script,
- * and `img-src`, `font-src`, `connect-src` and `form-action` already close the usual CSS
- * exfiltration routes. docs/SECURITY.md records the trade-off.
+ * `style-src` is `'self'` plus the hashes of the page's inline `<style>` elements (none today).
+ * Inline `style="..."` attributes are allowed by `style-src-attr 'unsafe-hashes'` with the sha256
+ * of each distinct value, and only on pages that have any. Measured on the built site: no page has
+ * a `<style>` element, and only two field notes have attributes (the Shiki `--shiki-light` and
+ * `--shiki-dark` custom properties of highlighted code, 8 and 4 distinct values). Everything React
+ * and Motion change at runtime goes through the CSSOM (`element.style.x = ...`), which CSP does not
+ * govern. 'unsafe-inline' is therefore not needed anywhere. docs/SECURITY.md has the numbers.
+ *
+ * `img-src` is `'self'`: no built page or stylesheet uses a `data:` image.
  *
  * `form-action` also allows `mailto:`: the contact form falls back to a native mailto: submission
  * when JavaScript is off, and that hands the message to the visitor's own mail client. Nothing is
  * posted to any server.
  *
- * @param {{ scriptHashes: readonly string[] }} input
+ * With `meta: true` the policy is the one placed in a `<meta http-equiv>` tag. A browser ignores
+ * `frame-ancestors`, `report-uri` and `sandbox` there, so they are left out; everything else is the
+ * same, so the header and the tag never disagree.
+ *
+ * @param {{ scriptHashes: readonly string[]; styleHashes?: readonly string[]; styleAttrHashes?: readonly string[]; meta?: boolean }} input
  * @returns {string}
  */
-export function buildCsp({ scriptHashes }) {
-  for (const hash of scriptHashes) {
+export function buildCsp({ scriptHashes, styleHashes = [], styleAttrHashes = [], meta = false }) {
+  for (const hash of [...scriptHashes, ...styleHashes, ...styleAttrHashes]) {
     // Anything that is not a plain hash source could smuggle in another directive or source.
     if (!HASH_SOURCE.test(hash))
       throw new Error(`Invalid CSP hash source: ${JSON.stringify(hash)}`);
   }
-  const hashes = [...new Set(scriptHashes)].sort();
+  const unique = (list) => [...new Set(list)].sort();
   return [
     "default-src 'self'",
-    ["script-src 'self'", ...hashes].join(" "),
-    "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data:",
+    ["script-src 'self'", ...unique(scriptHashes)].join(" "),
+    ["style-src 'self'", ...unique(styleHashes)].join(" "),
+    ...(styleAttrHashes.length > 0
+      ? [["style-src-attr 'unsafe-hashes'", ...unique(styleAttrHashes)].join(" ")]
+      : []),
+    "img-src 'self'",
     "font-src 'self'",
     "connect-src 'self'",
-    "frame-ancestors 'none'",
+    ...(meta ? [] : ["frame-ancestors 'none'"]),
     "base-uri 'self'",
     "form-action 'self' mailto:",
     "object-src 'none'",
@@ -288,9 +344,10 @@ const UNSAFE_SCRIPT_SOURCES = new Set([
 /**
  * Why a CSP is too weak for this site, as a list. Empty when it is acceptable.
  * @param {string} csp
+ * @param {{ meta?: boolean }} [options] `meta`: the policy of a <meta> tag, which cannot carry frame-ancestors
  * @returns {string[]}
  */
-export function cspWeaknesses(csp) {
+export function cspWeaknesses(csp, { meta = false } = {}) {
   const problems = [];
   const d = parseCsp(csp);
   const scriptSrc = d.get("script-src");
@@ -314,7 +371,90 @@ export function cspWeaknesses(csp) {
   requireValue("default-src", "'self'");
   requireValue("object-src", "'none'");
   requireValue("base-uri", "'self'");
-  requireValue("frame-ancestors", "'none'");
+  if (!meta) requireValue("frame-ancestors", "'none'");
+  else if (d.has("frame-ancestors")) problems.push("a meta policy must not carry frame-ancestors");
+  // Styles: hashes only. 'unsafe-inline' would let injected markup restyle the page.
+  for (const name of ["style-src", "style-src-elem", "style-src-attr"]) {
+    for (const source of d.get(name) ?? []) {
+      if (source.toLowerCase() === "'unsafe-inline'") problems.push(`${name} allows ${source}`);
+      else if (!(source === "'self'" || source === "'unsafe-hashes'" || HASH_SOURCE.test(source))) {
+        problems.push(`${name} allows an unexpected source: ${source}`);
+      }
+    }
+  }
+  if (!d.has("style-src")) problems.push("style-src is missing");
+  requireValue("img-src", "'self'");
+  return problems;
+}
+
+/* -------------------------------------------------------------------------------------------- */
+/* <meta> policy                                                                                */
+/* -------------------------------------------------------------------------------------------- */
+
+const escapeAttribute = (value) =>
+  value.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+
+const META_TAG = new RegExp(`<meta\\b${ATTRS}>`, "gi");
+const isCspMeta = (attrs) =>
+  (attrs["http-equiv"] ?? "").trim().toLowerCase() === "content-security-policy";
+
+/**
+ * The tag that carries a page's policy when the host sends no header (Vercel, GitHub Pages, any
+ * plain file server) and on responses a host builds itself, such as a 404.
+ * @param {string} csp a policy built with `meta: true`
+ */
+export function buildCspMetaTag(csp) {
+  return `<meta http-equiv="Content-Security-Policy" content="${escapeAttribute(csp)}"/>`;
+}
+
+/**
+ * Puts the policy tag first in `<head>` (after a `<meta charset>`, which must stay within the first
+ * 1024 bytes): a meta policy governs only what the parser sees after it.
+ * Any tag from an earlier run is removed first, so the function is idempotent.
+ *
+ * @param {string} html
+ * @param {string} csp a policy built with `meta: true`
+ * @returns {string}
+ */
+export function injectCspMeta(html, csp) {
+  const cleaned = html.replace(META_TAG, (tag, attrs) =>
+    isCspMeta(parseAttributes(attrs)) ? "" : tag,
+  );
+  const head = /<head(?:\s(?:[^>"']|"[^"]*"|'[^']*')*)?>/i.exec(cleaned);
+  if (!head) throw new Error("no <head> element to put the Content-Security-Policy tag in");
+  let at = head.index + head[0].length;
+  // A charset declaration must sit in the first 1024 bytes of the document, and the policy tag
+  // (it lists hashes) is longer than that. The declaration loads nothing, so it may come first.
+  const charset = /^\s*<meta\s+charset\s*=\s*(?:"[^"]*"|'[^']*'|[^\s"'>/]+)\s*\/?>/i.exec(
+    cleaned.slice(at),
+  );
+  if (charset) at += charset[0].length;
+  return `${cleaned.slice(0, at)}${buildCspMetaTag(csp)}${cleaned.slice(at)}`;
+}
+
+/**
+ * Problems with the policy tag of one page: it must exist exactly once, be the first element in
+ * `<head>` (a leading `<meta charset>` may precede it), and carry exactly `expected`.
+ *
+ * @param {string} html
+ * @param {string} expected the policy built with `meta: true` for this page
+ * @returns {string[]}
+ */
+export function verifyCspMeta(html, expected) {
+  const problems = [];
+  const tags = [...iterateTags(html)];
+  const metas = tags.filter((tag) => tag.name === "meta" && isCspMeta(tag.attrs));
+  if (metas.length === 0) return ["no Content-Security-Policy <meta> tag"];
+  if (metas.length > 1) problems.push(`${metas.length} Content-Security-Policy <meta> tags`);
+  const headAt = tags.findIndex((tag) => tag.name === "head");
+  let first = headAt + 1;
+  if (tags[first]?.name === "meta" && tags[first]?.attrs.charset !== undefined) first += 1;
+  if (headAt === -1 || tags[first] !== metas[0]) {
+    problems.push("the Content-Security-Policy <meta> tag is not the first element in <head>");
+  }
+  if (metas[0]?.attrs.content !== expected) {
+    problems.push("the Content-Security-Policy <meta> tag does not match this page's policy");
+  }
   return problems;
 }
 
@@ -507,7 +647,8 @@ export function headersForPath(rules, pathname) {
 /**
  * Maps a built HTML file (path relative to the export root) to the URL path it is served at.
  * `index.html` and `a/b/index.html` become `/` and `/a/b/`; `404.html` stays `/404.html`.
- * Returns null for files that are not pages (Next's internal `_next` and `_not-found` outputs).
+ * `_not-found/index.html` is a copy of the 404 page that a host serves with status 200 when asked
+ * for it, so it gets a rule too. Returns null for anything else under an underscore folder.
  *
  * @param {string} relativeFile path relative to out/, with / or \ separators
  * @returns {string | null}
@@ -516,7 +657,7 @@ export function pagePathFromFile(relativeFile) {
   const parts = relativeFile.split(/[\\/]+/).filter(Boolean);
   const file = parts.pop();
   if (!file || !file.endsWith(".html")) return null;
-  if (parts.some((part) => part.startsWith("_"))) return null;
+  if (parts.some((part) => part.startsWith("_") && part !== "_not-found")) return null;
   if (file === "index.html") return `/${parts.map((p) => `${p}/`).join("")}`;
   if (file.startsWith("_")) return null;
   return `/${[...parts, file].join("/")}`;
@@ -527,7 +668,7 @@ export function pagePathFromFile(relativeFile) {
  * Every page must resolve to exactly one acceptable CSP that contains the hash of every one of its
  * inline scripts, plus every baseline header.
  *
- * @param {{ headersText: string; pages: readonly { path: string; scriptHashes: readonly string[] }[] }} input
+ * @param {{ headersText: string; pages: readonly { path: string; scriptHashes: readonly string[]; styleHashes?: readonly string[]; styleAttrHashes?: readonly string[] }[] }} input
  * @returns {string[]} problems; empty when the file is sound
  */
 export function verifyHeadersFile({ headersText, pages }) {
@@ -557,6 +698,14 @@ export function verifyHeadersFile({ headersText, pages }) {
       const allowed = new Set(parseCsp(csp).get("script-src") ?? []);
       for (const hash of page.scriptHashes) {
         if (!allowed.has(hash)) problems.push(`${page.path}: inline script ${hash} is not allowed`);
+      }
+      const styles = new Set(parseCsp(csp).get("style-src") ?? []);
+      for (const hash of page.styleHashes ?? []) {
+        if (!styles.has(hash)) problems.push(`${page.path}: inline style ${hash} is not allowed`);
+      }
+      const attrs = new Set(parseCsp(csp).get("style-src-attr") ?? []);
+      for (const hash of page.styleAttrHashes ?? []) {
+        if (!attrs.has(hash)) problems.push(`${page.path}: style attribute ${hash} is not allowed`);
       }
     }
 

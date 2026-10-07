@@ -3,7 +3,12 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { buildCsp, buildPageHeadersFile, hashScript } from "../../scripts/lib/csp.mjs";
+import {
+  buildCsp,
+  buildCspMetaTag,
+  buildPageHeadersFile,
+  hashScript,
+} from "../../scripts/lib/csp.mjs";
 
 // The e2e suite runs against tests/e2e/static-server.mjs. It cannot run in every environment, so
 // the server itself is tested here: if it serves the wrong type, status or header, every browser
@@ -53,7 +58,10 @@ beforeAll(async () => {
     fs.writeFileSync(path.join(dir, name), body);
   };
   write("index.html", "<h1>home</h1>");
-  write("about/index.html", "<h1>about</h1>");
+  write(
+    "about/index.html",
+    `<html><head><meta charSet="utf-8"/>${buildCspMetaTag(buildCsp({ scriptHashes: [] }))}</head><body><h1>about</h1></body></html>`,
+  );
   write("404.html", "<h1>missing</h1>");
   write("robots.txt", "User-agent: *");
   write("_next/static/app.js", "console.log(1)");
@@ -85,7 +93,7 @@ describe("static server", () => {
     const res = await get("/about/");
     expect(res.status).toBe(200);
     expect(res.headers.get("content-type")).toBe("text/html; charset=utf-8");
-    expect(await res.text()).toBe("<h1>about</h1>");
+    expect(await res.text()).toContain("<h1>about</h1>");
     expect(await (await get("/")).text()).toBe("<h1>home</h1>");
   });
 
@@ -138,6 +146,15 @@ describe("static server", () => {
     expect(csp).not.toMatch(/script-src[^;]*unsafe-inline/);
   });
 
+  it("serves the policy tag in the HTML as built, minus upgrade-insecure-requests", async () => {
+    const html = await (await get("/about/")).text();
+    const tag = /<meta http-equiv="Content-Security-Policy" content="([^"]*)"/.exec(html)?.[1];
+    expect(tag).toContain("default-src 'self'");
+    expect(tag).toContain("style-src 'self'");
+    expect(tag).not.toContain("upgrade-insecure-requests");
+    expect(html).toContain('<meta charSet="utf-8"/>');
+  });
+
   it("does not leave the export directory", async () => {
     for (const attempt of [
       "/../package.json",
@@ -160,6 +177,20 @@ describe("static server", () => {
     expect(Number(head.headers.get("content-length"))).toBeGreaterThan(0);
     const post = await get("/about/", { method: "POST", body: "x" });
     expect(post.status).toBe(405);
+  });
+});
+
+describe("static server without the policy header (--csp-header off)", () => {
+  it("sends no Content-Security-Policy header but keeps the rest and the tag", async () => {
+    const { child, base: url } = await listen(["--dir", dir, "--port", "0", "--csp-header", "off"]);
+    try {
+      const res = await fetch(`${url}/about/`);
+      expect(res.headers.get("content-security-policy")).toBeNull();
+      expect(res.headers.get("x-frame-options")).toBe("DENY");
+      expect(await res.text()).toContain('http-equiv="Content-Security-Policy"');
+    } finally {
+      child.kill();
+    }
   });
 });
 

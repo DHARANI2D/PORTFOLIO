@@ -2,6 +2,9 @@ name: Portfolio
 
 # Quality gates for VERSION_4 (the Next.js portfolio). Runs only when that folder, or this file,
 # changes. Nothing here deploys: hosting builds the site itself from the same commands.
+#
+# Actions are pinned to major version tags, which are mutable. .github/dependabot.yml keeps them,
+# and the npm dependencies, up to date through reviewed pull requests.
 on:
   push:
     paths:
@@ -55,9 +58,20 @@ jobs:
       # committed, never made silently by CI.
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint
+      # Types of the app, then of the Playwright specs (tests/e2e/tsconfig.json).
       - run: pnpm typecheck
       - run: pnpm format:check
       - run: pnpm test
+
+      # Production dependencies must have no known high or critical advisory. This is the blocking
+      # check: the lockfile is frozen, so a failure means a reviewed update is due.
+      - name: Audit production dependencies
+        run: pnpm audit --prod --audit-level=high
+
+      # Development tooling never ships to visitors. Advisories there are reported, not blocking.
+      - name: Audit development dependencies (report only)
+        continue-on-error: true
+        run: pnpm audit --dev --audit-level=high
 
   build:
     name: Build and verify headers
@@ -89,13 +103,16 @@ jobs:
           test -f out/_headers
           test -f out/.well-known/security.txt
           test -f out/headers.vercel.json
-          # No unsafe-inline or unsafe-eval in any script-src.
-          if grep -E "script-src[^;]*'unsafe-(inline|eval)'" out/_headers; then
-            echo "::error::script-src allows unsafe-inline or unsafe-eval"
+          # No unsafe-inline or unsafe-eval anywhere in the policy: scripts, styles and style
+          # attributes are all allowed by hash.
+          if grep -E "'unsafe-(inline|eval)'" out/_headers; then
+            echo "::error::the policy allows unsafe-inline or unsafe-eval"
             exit 1
           fi
-          # Every page has a policy holding the hash of each of its inline scripts, every baseline
-          # header is present, security.txt has not expired, and a committed vercel.json is not stale.
+          # Every html file (404.html and _not-found included) has its policy as the first <meta>
+          # in <head>, every page has a header policy holding the hash of each inline script, style
+          # and style attribute, every baseline header is present, security.txt has not expired,
+          # and a committed vercel.json is not stale.
           node scripts/postbuild.mjs --check
 
       - uses: actions/upload-artifact@v4

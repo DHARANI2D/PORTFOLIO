@@ -10,9 +10,9 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build && node scripts/postbuild.mjs",
-    "start": "pnpm dlx serve out",
+    "start": "node tests/e2e/static-server.mjs --dir out --port 3000",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc -p tests/e2e --noEmit",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "vitest run",

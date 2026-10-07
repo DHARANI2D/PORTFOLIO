@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 import { THEME_KEY, VIEW_KEY } from "../../lib/preferences";
 import { closeMenu, openMenuIfPresent, waitForHydration } from "./helpers";
 

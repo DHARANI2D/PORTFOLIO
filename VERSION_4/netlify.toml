@@ -18,7 +18,9 @@
 # script of this particular build, so it cannot be written by hand: scripts/postbuild.mjs generates
 # out/_headers (CSP, HSTS, nosniff, Referrer-Policy, Permissions-Policy, COOP, X-Frame-Options,
 # long-lived cache for /_next/static/*) on every build, and Netlify applies that file.
-# Duplicating them in [[headers]] would risk two different policies on one response.
+# Duplicating them in [[headers]] would risk two different policies on one response. The same
+# policy is also written into every HTML file as a <meta> tag, so it holds even on a response
+# Netlify builds itself (an unknown URL serves 404.html without a per-page header rule).
 
 # Netlify's post-processing (JS/CSS/HTML minify, bundling, image compression) rewrites
 # files after the build. Rewriting an inline script changes its hash and the page's CSP would then

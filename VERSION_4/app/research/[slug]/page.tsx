@@ -1,17 +1,20 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import { GraphActivator } from "@/components/graph/graph-context";
 import { RelatedSystems } from "@/components/research/related-systems";
 import { ResearchBlock } from "@/components/research/research-block";
 import { ResearchLinks } from "@/components/research/research-links";
 import { ResearchNav } from "@/components/research/research-nav";
-import { firstSentence, pad2 } from "@/components/research/text";
+import { metaDescription, pad2 } from "@/components/research/text";
+import { noteLabel } from "@/components/writing/format";
+import { notesTaggedWith } from "@/components/writing/related";
 import { Container } from "@/components/ui/container";
 import { Label } from "@/components/ui/label";
 import { getProject, getResearch, getResearchItem } from "@/lib/content";
 import { buildMetadata } from "@/lib/seo";
+import { getWritingPosts } from "@/lib/writing";
 import { cn } from "@/lib/utils";
 
 // Static export: only the slugs in the content exist, anything else is a 404.
@@ -29,7 +32,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   if (!item) return {};
   return buildMetadata({
     title: `${item.title} research`,
-    description: firstSentence(item.abstract, 160),
+    description: metaDescription(item.abstract, item.metaDescription),
     path: `/research/${item.slug}/`,
   });
 }
@@ -60,9 +63,17 @@ export default async function ResearchPage({ params }: PageProps) {
     return project ? [project] : [];
   });
 
+  // Field notes tagged with this direction or with one of its systems (same rule as the note pages).
+  const notes = notesTaggedWith(await getWritingPosts(), [
+    item.title,
+    ...related.map((project) => project.name),
+  ]);
+
   // Number only the blocks that exist, so a short page reads 01, 02 rather than 01, 03.
   const hasNotes = item.notes.length > 0;
   const relatedIndex = pad2(hasNotes ? 3 : 2);
+  const notesIndex = pad2((hasNotes ? 3 : 2) + (related.length > 0 ? 1 : 0));
+  const notesRecruiterIndex = pad2(2 + (related.length > 0 ? 1 : 0));
   // Technical notes are engineer-only, so recruiter view numbers the next block 02.
 
   return (
@@ -140,6 +151,35 @@ export default async function ResearchPage({ params }: PageProps) {
             label="RELATED SYSTEMS"
           >
             <RelatedSystems systems={related} />
+          </ResearchBlock>
+        ) : null}
+
+        {notes.length > 0 ? (
+          <ResearchBlock
+            id="field-notes"
+            index={notesIndex}
+            recruiterIndex={notesRecruiterIndex}
+            label="RELATED FIELD NOTES"
+          >
+            <ul className="border-t">
+              {notes.map((note) => (
+                <li key={note.slug} className="border-b">
+                  <Link
+                    href={`/writing/${note.slug}/`}
+                    className="group flex min-h-14 flex-wrap items-baseline justify-between gap-x-6 gap-y-1 py-4 text-foreground transition-colors duration-200 hover:text-accent motion-reduce:transition-none"
+                  >
+                    <span className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+                      <Label className="shrink-0">{noteLabel(note.meta.number)}</Label>
+                      <span className="[overflow-wrap:anywhere]">{note.meta.title}</span>
+                    </span>
+                    <ArrowRight
+                      aria-hidden
+                      className="size-4 shrink-0 text-muted transition-transform duration-200 group-hover:text-accent motion-safe:group-hover:translate-x-0.5 motion-reduce:transition-none"
+                    />
+                  </Link>
+                </li>
+              ))}
+            </ul>
           </ResearchBlock>
         ) : null}
       </article>

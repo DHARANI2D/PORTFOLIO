@@ -12,6 +12,16 @@ export const PURPOSES = [
 
 export const MESSAGE_MAX = 1000;
 
+/**
+ * Longest mailto: URL the form will hand to an email client. The character cap does not bound the
+ * encoded length (one emoji or Tamil letter becomes 9 to 12 URL characters), and mail clients and
+ * browsers commonly truncate or drop the body of URLs beyond about 2000 characters.
+ */
+export const MAILTO_MAX_LENGTH = 1800;
+
+/** True when the whole mailto: URL is short enough to pass to an email client intact. */
+export const fitsMailto = (url: string): boolean => url.length <= MAILTO_MAX_LENGTH;
+
 export type ComposeInput = {
   /** Recipient. Constant from lib/site.ts, never user input. */
   to: string;

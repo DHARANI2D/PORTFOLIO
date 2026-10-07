@@ -11,7 +11,7 @@ When in doubt, leave it out or write the sentence so it only claims what is list
 - Based in India (state only "India"). Open to global roles.
 - Email: dharanidharan2d@gmail.com · LinkedIn: https://www.linkedin.com/in/dharanidharan-senthilkumar-b4244b232/ · GitHub: https://github.com/DHARANI2D · Hashnode: https://dharani2d.hashnode.dev/
 - Resume (PDF download): https://drive.google.com/uc?export=download&id=1D60aoGGH331ehux7CgAmwazP0CVfHhEk
-- Avatar: a stylised illustrated portrait (`/helios-avatar.png`). Not a realistic photo. Used small, on About only.
+- Avatar: a stylised illustrated portrait (`/helios-avatar.webp`). Not a realistic photo. Used small, on About only.
 - Education: B.E. Computer Science & Engineering, Sri Krishna College of Engineering & Technology (Anna University), 2021–2025, CGPA 8.5/10.
 
 **Experience**

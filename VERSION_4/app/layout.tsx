@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
+import "@/components/hero/home-motion.css";
 import { CommandPalette } from "@/components/command/command-palette";
 import { GraphProvider } from "@/components/graph/graph-context";
 import { SecurityGraph } from "@/components/graph/security-graph";
@@ -65,7 +66,7 @@ export const metadata: Metadata = {
     title: site.title,
     description: site.description,
     url: site.url,
-    locale: "en",
+    locale: "en_US",
   },
   twitter: { card: "summary_large_image", title: site.title, description: site.description },
   robots: { index: true, follow: true },

@@ -39,7 +39,7 @@ function VerifiedRow({ cert }: { cert: Certification }) {
 
   return (
     <li className="grid grid-cols-[0.5rem_minmax(0,1fr)] gap-x-3 gap-y-3 border-b py-6 md:grid-cols-[0.5rem_minmax(0,1fr)_auto] md:items-center">
-      {/* Filled marker: earned. The group heading says VERIFIED, so no extra text is needed. */}
+      {/* Filled marker: earned. The group heading says EARNED, so no extra text is needed. */}
       <span
         aria-hidden
         className="mt-3 size-2 self-start rounded-full bg-accent md:mt-0 md:self-center"

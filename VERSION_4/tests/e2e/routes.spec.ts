@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 import { sitemapPaths } from "./built-site";
 import { waitForHydration, watchProblems } from "./helpers";
 
