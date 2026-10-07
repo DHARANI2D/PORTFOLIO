@@ -44,7 +44,7 @@ jobs:
           persist-credentials: false
 
       # The pnpm version comes from "packageManager" in package.json.
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
         with:
           package_json_file: VERSION_4/package.json
 
@@ -82,7 +82,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
         with:
           package_json_file: VERSION_4/package.json
 
@@ -134,7 +134,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
         with:
           package_json_file: VERSION_4/package.json
 
