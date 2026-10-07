@@ -14,7 +14,9 @@ export const aegis = {
   domain: ["AI Security", "Zero trust", "Governance", "Policy"],
   tagline: "A zero-trust control plane for AI agents.",
   summary:
-    "Identity validation, intent-aware authorization, policy-based access control and semantic controls, with explicit trust boundaries around autonomous systems.",
+    "An agent with access to real resources can be steered or can misuse that access. AEGIS puts identity, intent, policy and semantic checks between an agent’s request and the resource it wants.",
+  metaDescription:
+    "AEGIS is a zero-trust control plane for AI agents: identity validation, intent-aware authorization, policy-based access control and semantic controls.",
   overview: [
     "AEGIS stands for AI Enforcement & Governance Infrastructure. It is a zero-trust control plane for AI agents.",
     "It validates identity, authorizes by intent, applies policy-based access control, and adds semantic controls against prompt injection and AI misuse. It puts explicit trust boundaries around autonomous systems.",

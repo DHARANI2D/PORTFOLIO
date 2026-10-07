@@ -1,3 +1,5 @@
+import fs from "node:fs";
+import path from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   commandNames,
@@ -266,5 +268,94 @@ describe("clear", () => {
   it("asks the UI to clear and prints nothing", () => {
     expect(run("clear")).toEqual({ lines: [], clear: true });
     expect(run("cls").clear).toBe(true);
+  });
+});
+
+/**
+ * Words that exist on every plain object. User input must treat them as ordinary unknown words:
+ * `open constructor` used to resolve to Object's constructor function and crash the terminal.
+ */
+const PROTOTYPE_WORDS = [
+  "constructor",
+  "__proto__",
+  "toString",
+  "hasOwnProperty",
+  "valueOf",
+  "isPrototypeOf",
+  "propertyIsEnumerable",
+  "toLocaleString",
+  "__defineGetter__",
+  "__lookupGetter__",
+  "prototype",
+] as const;
+
+describe("input that names a prototype member", () => {
+  it.each(PROTOTYPE_WORDS)("`open %s` finds nothing and does not navigate", (word) => {
+    const result = run(`open ${word}`);
+    expect(result.navigate).toBeUndefined();
+    expect(text(result)).toContain(`Nothing named "${word}"`);
+  });
+
+  it.each(PROTOTYPE_WORDS)("`%s` as a command is an unknown command", (word) => {
+    const result = run(word);
+    expect(text(result)).toContain(`Command not found: ${word}`);
+    expect(result.navigate).toBeUndefined();
+  });
+
+  it.each(PROTOTYPE_WORDS)("scoped and argument forms with %s never throw or navigate", (word) => {
+    for (const input of [
+      `open research ${word}`,
+      `open systems ${word}`,
+      `open systems/${word}`,
+      `open /research/${word}/`,
+      `cd ${word}`,
+      `theme ${word}`,
+      `view ${word}`,
+    ]) {
+      const result = run(input);
+      expect(result.navigate, input).toBeUndefined();
+      expect(result.theme, input).toBeUndefined();
+      expect(result.view, input).toBeUndefined();
+      expect(Array.isArray(result.lines), input).toBe(true);
+    }
+  });
+
+  it("only ever returns a string for navigate", () => {
+    for (const word of PROTOTYPE_WORDS) {
+      for (const input of [`open ${word}`, `open ${word} ${word}`, `open research ${word}`]) {
+        const { navigate } = run(input);
+        expect(navigate === undefined || typeof navigate === "string", input).toBe(true);
+      }
+    }
+  });
+
+  it("still opens the real pages, which share the lookup table", () => {
+    expect(run("open home").navigate).toBe("/");
+    expect(run("open privacy").navigate).toBe("/privacy/");
+  });
+});
+
+describe("what ships to the browser", () => {
+  const source = fs.readFileSync(path.join(__dirname, "../../lib/terminal-commands.ts"), "utf8");
+  const imports = [...source.matchAll(/^import\s+(type\s+)?[^;]*?from\s+"([^"]+)";/gms)].map(
+    (match) => ({ typeOnly: match[1] !== undefined, from: match[2] ?? "" }),
+  );
+
+  it("imports content and the schema as types only, so zod never reaches a bundle", () => {
+    expect(imports.length).toBeGreaterThan(0);
+    for (const { typeOnly, from } of imports) {
+      if (from === "@/lib/fuzzy") continue;
+      expect(typeOnly, `${from} must be \`import type\``).toBe(true);
+    }
+    expect(source).not.toMatch(/from\s+"zod"/);
+    expect(source).not.toMatch(/@\/lib\/content/);
+    expect(source).not.toMatch(/server-only/);
+  });
+
+  it("runtime-imports nothing but the fuzzy scorer, which has no imports of its own", () => {
+    const runtime = imports.filter((entry) => !entry.typeOnly).map((entry) => entry.from);
+    expect(runtime).toEqual(["@/lib/fuzzy"]);
+    const fuzzy = fs.readFileSync(path.join(__dirname, "../../lib/fuzzy.ts"), "utf8");
+    expect(fuzzy).not.toMatch(/^import\s/m);
   });
 });

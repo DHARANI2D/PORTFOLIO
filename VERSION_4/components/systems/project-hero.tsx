@@ -4,25 +4,32 @@ import { ProjectLinks } from "@/components/systems/project-links";
 import { Container } from "@/components/ui/container";
 import { Label } from "@/components/ui/label";
 import { Tag } from "@/components/ui/tag";
+import { categoryRepeatsDomain } from "@/components/systems/project-meta";
 import type { Project } from "@/content/schema";
 import { cn } from "@/lib/utils";
 
 /**
- * The "3 levels" rhythm of a case study: 3 seconds (tagline), 30 seconds (summary), 5 minutes
- * (everything below). Three short ticks fill up with the level. The text carries the meaning, the
- * ticks are decoration.
+ * The "3 levels" rhythm of a case study: what it is (3 seconds, the tagline), why it matters
+ * (30 seconds, the summary), how it works (5 minutes, everything below). Each level is named by what
+ * it answers, with the time budget after it. Three short ticks fill up with the level. The text
+ * carries the meaning, the ticks are decoration.
  */
 export function LevelLabel({
   level,
+  hint,
   className,
   children,
 }: {
   level: 1 | 2 | 3;
+  /** The time budget, shown after the name, for example "3 seconds". */
+  hint?: string;
   className?: string;
   children: React.ReactNode;
 }) {
   return (
-    <p className={cn("flex items-center gap-3 label-mono text-muted", className)}>
+    <p
+      className={cn("flex flex-wrap items-center gap-x-3 gap-y-1 label-mono text-muted", className)}
+    >
       <span aria-hidden className="flex items-center gap-2">
         {[1, 2, 3].map((tick) => (
           <span
@@ -31,7 +38,8 @@ export function LevelLabel({
           />
         ))}
       </span>
-      {children}
+      <span className="text-foreground">{children}</span>
+      {hint ? <span>{hint}</span> : null}
     </p>
   );
 }
@@ -52,7 +60,7 @@ const SPAN = {
 
 type MetaCell = { key: string; label: string; span: keyof typeof SPAN; value: React.ReactNode };
 
-function metaCells(project: Project): MetaCell[] {
+function metaCells(project: Project, brief: boolean): MetaCell[] {
   const fixed: MetaCell[] = [];
 
   if (project.status) {
@@ -69,7 +77,10 @@ function metaCells(project: Project): MetaCell[] {
     });
   }
 
-  fixed.push({ key: "category", label: "CATEGORY", span: 3, value: project.category });
+  // A brief page says the domain once: a category that only repeats the domain tags is left out.
+  if (!brief || !categoryRepeatsDomain(project)) {
+    fixed.push({ key: "category", label: "CATEGORY", span: 3, value: project.category });
+  }
 
   if (project.stack.length > 0) {
     fixed.push({
@@ -77,6 +88,15 @@ function metaCells(project: Project): MetaCell[] {
       label: "STACK",
       span: 3,
       value: <span className="font-mono text-sm">{project.stack.join(" · ")}</span>,
+    });
+  }
+
+  if (brief) {
+    fixed.push({
+      key: "detail",
+      label: "PUBLISHED DETAIL",
+      span: 3,
+      value: <span className="text-muted">Overview only</span>,
     });
   }
 
@@ -97,22 +117,33 @@ function metaCells(project: Project): MetaCell[] {
     ),
   };
 
-  // Reading order: STATUS, DOMAIN, CATEGORY, STACK.
+  // Reading order: STATUS, DOMAIN, CATEGORY, STACK, PUBLISHED DETAIL.
   const status = fixed.find((cell) => cell.key === "status");
   const rest = fixed.filter((cell) => cell.key !== "status");
   return [...(status ? [status] : []), domain, ...rest];
 }
 
 /**
- * Case-study hero. Layer 1 (tagline) and layer 2 (summary) of the page, then the meta grid and the
- * links that really exist. Server component.
+ * Hero of a system page, then the meta grid and the links that really exist. Server component.
+ *
+ * `case-study`: layer 1 (what it is: the tagline) and layer 2 (why it matters: the summary) side by
+ * side, so the three layers of the page can be told apart.
+ * `brief`: for a system with no more than an overview. The tagline is the lead and the summary moves
+ * into the overview block below, so nothing is said twice at the top of a short page.
  */
-export function ProjectHero({ project }: { project: Project }) {
-  const cells = metaCells(project);
+export function ProjectHero({
+  project,
+  variant = "case-study",
+}: {
+  project: Project;
+  variant?: "case-study" | "brief";
+}) {
+  const brief = variant === "brief";
+  const cells = metaCells(project, brief);
 
   return (
     <header className="relative">
-      <Container className="pt-6 pb-16 md:pt-8 md:pb-24">
+      <Container className={cn("pt-6 md:pt-8", brief ? "pb-12 md:pb-16" : "pb-16 md:pb-24")}>
         <nav aria-label="Back to the systems index">
           <Link
             href="/systems/"
@@ -138,20 +169,31 @@ export function ProjectHero({ project }: { project: Project }) {
           </h1>
         </div>
 
-        <div className="mt-12 grid gap-12 lg:mt-16 lg:grid-cols-12 lg:gap-x-6">
-          <div className={cn("lg:col-span-7", rise)}>
-            <LevelLabel level={1}>THE 3-SECOND VERSION</LevelLabel>
-            <p className="mt-6 max-w-[24ch] text-2xl headline md:text-4xl">{project.tagline}</p>
+        {brief ? (
+          <p className={cn("mt-8 max-w-[28ch] text-2xl headline md:mt-10 md:text-4xl", rise)}>
+            {project.tagline}
+          </p>
+        ) : (
+          <div className="mt-12 grid gap-12 lg:mt-16 lg:grid-cols-12 lg:gap-x-6">
+            <div className={cn("lg:col-span-7", rise)}>
+              <LevelLabel level={1} hint="3 seconds">
+                WHAT IT IS
+              </LevelLabel>
+              <p className="mt-6 max-w-[24ch] text-2xl headline md:text-4xl">{project.tagline}</p>
+            </div>
+            <div className={cn("lg:col-span-5", rise, "delay-100")}>
+              <LevelLabel level={2} hint="30 seconds">
+                WHY IT MATTERS
+              </LevelLabel>
+              <p className="mt-6 max-w-xl text-lg text-muted">{project.summary}</p>
+            </div>
           </div>
-          <div className={cn("lg:col-span-5", rise, "delay-100")}>
-            <LevelLabel level={2}>THE 30-SECOND VERSION</LevelLabel>
-            <p className="mt-6 max-w-xl text-lg text-muted">{project.summary}</p>
-          </div>
-        </div>
+        )}
 
         <dl
           className={cn(
-            "mt-16 grid grid-cols-1 gap-x-6 gap-y-8 border-t pt-8 sm:grid-cols-2 lg:grid-cols-12",
+            "grid grid-cols-1 gap-x-6 gap-y-8 border-t pt-8 sm:grid-cols-2 lg:grid-cols-12",
+            brief ? "mt-12" : "mt-16",
             rise,
             "delay-200",
           )}

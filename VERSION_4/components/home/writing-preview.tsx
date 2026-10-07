@@ -61,13 +61,13 @@ function NoteRow({ post }: { post: WritingPost }) {
   );
 }
 
-/** "06 / FIELD NOTES": the three newest notes as a document index. Engineer view only. */
+/** "FIELD NOTES" (auto-numbered): the three newest notes as a document index. Engineer view only. */
 export async function WritingPreview() {
   const posts = (await getWritingPosts()).slice(0, LATEST);
 
   return (
     <div data-engineer-only>
-      <Section id="writing" index="06" label="FIELD NOTES" title="Engineering notes.">
+      <Section id="writing" autoNumber label="FIELD NOTES" title="Engineering notes.">
         {posts.length > 0 ? (
           <>
             <ul>

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Container } from "@/components/ui/container";
 import { Label } from "@/components/ui/label";
-import { StatusDot } from "@/components/navigation/logo";
+import { AvailabilityStatus, StatusDot } from "@/components/navigation/logo";
 import { site } from "@/lib/site";
 import { cn } from "@/lib/utils";
 
@@ -17,7 +17,20 @@ const contactLinks = [
   { label: "Email", href: `mailto:${site.email}`, external: false },
 ] as const;
 
-/** Deliberately quiet: identity, three links, status, legal. Not a sitemap. */
+// Pages that are not in the primary nav. The footer is on every page in both views, so these two
+// are reachable from anywhere without the palette or the Recruiter view. Privacy and the
+// security.txt file (a static file, not a route) close the row.
+const pageLinks = [
+  { label: "Certifications", href: "/certifications/" },
+  { label: "Security", href: "/security/" },
+  { label: "Privacy", href: "/privacy/" },
+] as const;
+
+/**
+ * Deliberately quiet: identity, availability, three contact links, status, a few pages. Not a sitemap.
+ * The availability line lives here as well as in the header (xl and up) and the menu sheet, so it is
+ * on screen somewhere at every width.
+ */
 export function SiteFooter() {
   return (
     <footer className="relative z-10 border-t bg-background">
@@ -27,6 +40,7 @@ export function SiteFooter() {
             <p className="label-mono text-foreground">{site.name.toUpperCase()}</p>
             <p className="mt-4 text-lg text-foreground">Security Engineer</p>
             <p className="mt-1 text-muted">Detection · Cloud · AI Security</p>
+            <AvailabilityStatus pulse={false} className="mt-6" />
           </div>
 
           <nav aria-label="Contact links" className="md:col-span-5 md:justify-self-end">
@@ -54,7 +68,7 @@ export function SiteFooter() {
           </nav>
         </div>
 
-        <div className="mt-12 flex flex-col gap-4 border-t pt-6 md:mt-16 md:flex-row md:items-center md:justify-between md:gap-6">
+        <div className="mt-12 flex flex-col gap-4 border-t pt-6 md:mt-16 md:flex-row md:flex-wrap md:items-center md:justify-between md:gap-6">
           <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-6">
             <Label>© {site.builtOn}</Label>
             <p className="flex items-center gap-2 label-mono text-muted">
@@ -64,13 +78,15 @@ export function SiteFooter() {
             </p>
           </div>
 
-          <nav aria-label="Legal" className="md:ml-auto">
+          <nav aria-label="Footer links" className="md:ml-auto">
             <ul className="flex flex-wrap items-center gap-x-6">
-              <li>
-                <Link href="/privacy/" className={legalLinkClass}>
-                  Privacy
-                </Link>
-              </li>
+              {pageLinks.map((link) => (
+                <li key={link.href}>
+                  <Link href={link.href} className={legalLinkClass}>
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
               <li>
                 {/* A static file generated at build time, not a route: a plain anchor avoids router prefetch. */}
                 <a href="/.well-known/security.txt" className={legalLinkClass}>
@@ -81,7 +97,7 @@ export function SiteFooter() {
           </nav>
 
           {/* Keyboard hint only where a keyboard is likely; touch users have the Search button in the menu. */}
-          <p className="hidden label-mono text-muted pointer-fine:block">
+          <p data-js-only className="hidden label-mono text-muted pointer-fine:block">
             <kbd className="rounded-sm border px-1 py-0.5 font-mono">⌘K</kbd> /{" "}
             <kbd className="rounded-sm border px-1 py-0.5 font-mono">CTRL K</kbd> SEARCH
           </p>

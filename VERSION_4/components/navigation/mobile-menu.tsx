@@ -29,6 +29,30 @@ const toTitleCase = (label: string) => label.charAt(0) + label.slice(1).toLowerC
 // Matches Tailwind's `lg`: the header switches to the full desktop layout at this width.
 const DESKTOP_QUERY = "(min-width: 1024px)";
 
+// Frames to wait for the closing sheet to leave the DOM before running its follow-up anyway.
+const MAX_WAIT_FRAMES = 30;
+
+/**
+ * Runs `action` once no dialog is left in the DOM. Base UI reports "closed" (onOpenChangeComplete)
+ * while the popup is still mounted for a frame or two, and the palette ignores an open request
+ * while any role="dialog" exists, so an action run at that moment would be swallowed.
+ */
+function runWhenDialogsGone(action: () => void) {
+  let frames = 0;
+  const tick = () => {
+    frames += 1;
+    if (
+      document.querySelector('[role="dialog"], [role="alertdialog"]') &&
+      frames < MAX_WAIT_FRAMES
+    ) {
+      requestAnimationFrame(tick);
+      return;
+    }
+    action();
+  };
+  requestAnimationFrame(tick);
+}
+
 /**
  * Full-screen navigation sheet for viewports below `lg`. Everything the desktop header holds is
  * here, stacked, with 44px+ targets. The Dialog supplies the focus trap, Esc, scroll lock and
@@ -41,9 +65,10 @@ export function MobileMenu() {
   const [openedFor, setOpenedFor] = useState<string | null>(null);
   const open = openedFor === pathname;
   const setOpen = (next: boolean) => setOpenedFor(next ? pathname : null);
+  const menuButton = useRef<HTMLButtonElement>(null);
   // Work to run once the sheet has finished closing (opening the palette or terminal).
   const pendingAction = useRef<(() => void) | null>(null);
-  // When we leave via a link or another overlay, focus must not jump back to the MENU button.
+  // When we leave via a link, focus must not jump back to the MENU button: the new page takes it.
   const skipFocusRestore = useRef(false);
 
   function openMenu() {
@@ -51,9 +76,21 @@ export function MobileMenu() {
     setOpen(true);
   }
 
-  function closeMenu(afterClose?: () => void) {
-    pendingAction.current = afterClose ?? null;
+  /** Closes the sheet for a link: the destination page takes focus (see RouteFocus). */
+  function closeMenu() {
+    pendingAction.current = null;
     skipFocusRestore.current = true;
+    setOpen(false);
+  }
+
+  /**
+   * Closes the sheet, puts focus back on the MENU button, and only then opens another overlay
+   * (palette or terminal). The overlay then remembers MENU as its opener, so Esc in it lands on a
+   * real control instead of <body>.
+   */
+  function closeMenuThenOpen(open: () => void) {
+    pendingAction.current = open;
+    skipFocusRestore.current = false;
     setOpen(false);
   }
 
@@ -61,7 +98,11 @@ export function MobileMenu() {
     if (isOpen) return;
     const action = pendingAction.current;
     pendingAction.current = null;
-    action?.();
+    if (!action) return;
+    runWhenDialogsGone(() => {
+      menuButton.current?.focus({ preventScroll: true });
+      action();
+    });
   }
 
   // The sheet has no trigger on desktop; close it if the viewport grows past the breakpoint.
@@ -83,6 +124,7 @@ export function MobileMenu() {
   return (
     <>
       <Button
+        ref={menuButton}
         variant="secondary"
         size="sm"
         aria-haspopup="dialog"
@@ -153,6 +195,15 @@ export function MobileMenu() {
             Resume
           </ButtonLink>
 
+          {/* Not in the primary nav; reachable here so it is one tap away in either view. */}
+          <Link
+            href="/certifications/"
+            onClick={closeOnPlainClick}
+            className="mt-2 inline-flex min-h-11 items-center self-start label-mono text-muted transition-colors duration-200 hover:text-foreground motion-reduce:transition-none"
+          >
+            Certifications
+          </Link>
+
           <div className="mt-8 flex flex-col gap-4">
             <ViewToggle stretch />
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
@@ -160,7 +211,7 @@ export function MobileMenu() {
               <Button
                 variant="secondary"
                 className="w-full"
-                onClick={() => closeMenu(openCommandPalette)}
+                onClick={() => closeMenuThenOpen(openCommandPalette)}
               >
                 <Search aria-hidden className="size-4" />
                 Search
@@ -168,7 +219,7 @@ export function MobileMenu() {
               <Button
                 variant="secondary"
                 className="w-full"
-                onClick={() => closeMenu(() => openTerminal())}
+                onClick={() => closeMenuThenOpen(() => openTerminal())}
               >
                 <Terminal aria-hidden className="size-4" />
                 Terminal

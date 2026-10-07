@@ -29,7 +29,16 @@ const cardBase = cn(
 // Stretches the heading link over the whole card (the card is position: relative).
 const stretchedLink = "after:absolute after:inset-0 after:rounded-lg after:content-['']";
 
-function CaseStudyCue({ className }: { className?: string }) {
+/**
+ * A system gets the "case study" wording only when it has an architecture diagram to show. The
+ * others have a short overview page, and calling that a case study would promise more than is
+ * there. The same rule drives the cue, the accessible name and the intro below.
+ */
+function pageKind(project: Project): "case study" | "overview" {
+  return project.architecture ? "case study" : "overview";
+}
+
+function PageCue({ project, className }: { project: Project; className?: string }) {
   // The link itself carries the accessible name, so this cue is decorative.
   return (
     <span
@@ -39,7 +48,7 @@ function CaseStudyCue({ className }: { className?: string }) {
         className,
       )}
     >
-      CASE STUDY
+      {pageKind(project).toUpperCase()}
       <ArrowRight className="size-3.5 transition-transform duration-200 motion-safe:group-hover/card:translate-x-0.5" />
     </span>
   );
@@ -57,11 +66,24 @@ function DomainTags({ items, label }: { items: readonly string[]; label: string 
   );
 }
 
-/** Tier 1 and 2: a system component, not an image card. Header strip, body, diagram, footer strip. */
+/**
+ * Tier 1 and 2: a system component, not an image card. Four parts, always in this order: header
+ * strip, title block, flow diagram, footer. The medium cards share their row tracks (subgrid, md
+ * and up), so the rules between the parts line up across a row and the extra height sits where
+ * the content really differs (a longer tagline) instead of as a gap above the diagram.
+ */
 function SystemCard({ project, size }: { project: Project; size: "lg" | "md" }) {
   const lg = size === "lg";
   return (
-    <article data-flow-host className={cn(cardBase, "flex h-full flex-col")}>
+    <article
+      data-flow-host
+      className={cn(
+        cardBase,
+        "flex h-full flex-col",
+        // Subgrid: the four parts become rows of the parent list, which spans four tracks per card.
+        !lg && "md:row-span-4 md:grid md:grid-rows-subgrid md:gap-y-0",
+      )}
+    >
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b px-6 py-3">
         <Label>{lg ? `FLAGSHIP / ${project.category}` : project.category}</Label>
         {project.status ? (
@@ -72,31 +94,37 @@ function SystemCard({ project, size }: { project: Project; size: "lg" | "md" }) 
         ) : null}
       </div>
 
-      <div className={cn("flex flex-1 flex-col", lg ? "gap-8 p-6 md:p-8" : "gap-6 p-6")}>
-        <div>
-          <h3
-            className={cn(
-              "font-mono font-medium tracking-tight text-foreground",
-              lg ? "text-2xl md:text-3xl" : "text-xl",
-            )}
-          >
-            <Link href={`/systems/${project.slug}/`} className={stretchedLink}>
-              {project.name}
-              <span className="sr-only"> case study</span>
-            </Link>
-          </h3>
-          <p className={cn("mt-3 text-muted", lg ? "text-lg" : "text-base")}>{project.tagline}</p>
-          {lg ? <p className="mt-4 max-w-xl text-sm text-muted">{project.summary}</p> : null}
-        </div>
-        <MiniDiagram
-          flow={project.flow}
-          slug={project.slug}
-          label={`${project.name} flow`}
-          className="mt-auto"
-        />
+      <div className={cn(lg ? "px-6 pt-6 md:px-8 md:pt-8" : "px-6 pt-6")}>
+        <h3
+          className={cn(
+            "font-mono font-medium tracking-tight text-foreground",
+            lg ? "text-2xl md:text-3xl" : "text-xl",
+          )}
+        >
+          <Link href={`/systems/${project.slug}/`} className={stretchedLink}>
+            {project.name}
+            <span className="sr-only"> {pageKind(project)}</span>
+          </Link>
+        </h3>
+        <p className={cn("mt-3 text-muted", lg ? "text-lg" : "text-base")}>{project.tagline}</p>
+        {lg ? <p className="mt-4 max-w-xl text-sm text-muted">{project.summary}</p> : null}
       </div>
 
-      <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-4 border-t px-6 py-4">
+      {/* Flagship: the diagram sits at the bottom of the stretched card. Medium: it stays directly
+          under its tagline, and any extra height rests above the footer rule. */}
+      <div className={cn("flex flex-col px-6 py-6", lg && "flex-1 justify-end md:px-8 md:py-8")}>
+        <MiniDiagram flow={project.flow} slug={project.slug} label={`${project.name} flow`} />
+      </div>
+
+      <div
+        className={cn(
+          "border-t px-6 py-4",
+          // Medium: always two lines (tags, then the cue), so every footer has the same shape.
+          lg
+            ? "flex flex-wrap items-end justify-between gap-x-6 gap-y-4"
+            : "flex flex-col items-start gap-4",
+        )}
+      >
         <div className="flex min-w-0 flex-col gap-3">
           <DomainTags
             items={lg ? project.domain : project.domain.slice(0, 3)}
@@ -108,7 +136,7 @@ function SystemCard({ project, size }: { project: Project; size: "lg" | "md" }) 
             </p>
           ) : null}
         </div>
-        <CaseStudyCue />
+        <PageCue project={project} />
       </div>
     </article>
   );
@@ -128,21 +156,23 @@ function SystemRow({ project }: { project: Project }) {
         <h3 className="font-mono text-base font-medium tracking-tight text-foreground">
           <Link href={`/systems/${project.slug}/`} className={stretchedLink}>
             {project.name}
-            <span className="sr-only"> case study</span>
+            <span className="sr-only"> {pageKind(project)}</span>
           </Link>
         </h3>
         <p className="mt-2 text-sm text-muted">{project.tagline}</p>
       </div>
       <DomainTags items={project.domain} label={`${project.name} domains`} />
-      <CaseStudyCue />
+      <PageCue project={project} />
     </article>
   );
 }
 
 /**
- * 02 / SYSTEMS. Visual weight follows tier: two large flagship cards, three medium cards, one
- * compact row. Under the cards: the earlier-work archive and the engineering activity panel,
- * both engineer view only (the recruiter view keeps every system card).
+ * 02 / SYSTEMS (numbered by CSS counter, so the number stays continuous when the recruiter view
+ * hides sections). Visual weight follows tier: two large flagship cards, three medium cards, one
+ * compact row. Under the cards: the earlier-work archive (which also holds the one link to the
+ * GitHub profile) and the engineering activity counts, both engineer view only (the recruiter
+ * view keeps every system card).
  */
 export function SystemGrid() {
   const flagship = getProjectsByTier(1);
@@ -152,10 +182,10 @@ export function SystemGrid() {
   return (
     <Section
       id="systems"
-      index="02"
+      autoNumber
       label="SYSTEMS"
       title="Systems, not demos."
-      intro="Detection, correlation and agent security. Each system links to a case study."
+      intro="Detection, correlation and agent security. Each system has its own page; the ones with an architecture diagram are written up as case studies."
     >
       <div className="flex flex-col gap-6">
         {flagship.length > 0 ? (
@@ -173,8 +203,14 @@ export function SystemGrid() {
         {major.length > 0 ? (
           <ul aria-label="Major systems" className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {major.map((project, index) => (
-              <li key={project.slug} className="md:last:odd:col-span-2 lg:last:odd:col-span-1">
-                <Reveal className="h-full" delay={index === 0 ? 0 : index === 1 ? 1 : 2}>
+              <li
+                key={project.slug}
+                className="md:row-span-4 md:grid md:grid-rows-subgrid md:gap-y-0 md:last:odd:col-span-2 lg:last:odd:col-span-1"
+              >
+                <Reveal
+                  className="h-full md:row-span-4 md:grid md:grid-rows-subgrid md:gap-y-0"
+                  delay={index === 0 ? 0 : index === 1 ? 1 : 2}
+                >
                   <SystemCard project={project} size="md" />
                 </Reveal>
               </li>

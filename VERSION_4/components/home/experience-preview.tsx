@@ -11,13 +11,7 @@ import { cn } from "@/lib/utils";
 /** Education lives on About and /experience. This is the work timeline only. */
 const NON_WORK_IDS: ReadonlySet<string> = new Set(["education"]);
 
-/**
- * Focus areas for the current role, summarising its bullets (detection, incident lifecycle, SOC,
- * Cybersecurity Design & Engineering). Other entries fall back to the tags in content.
- */
-const FOCUS_TAGS: Readonly<Record<string, readonly string[]>> = {
-  "hpe-soc": ["Detection", "Incident response", "Security operations", "Security engineering"],
-};
+/** Tags come straight from the role's own tags in content/experience.ts, never rewritten here. */
 const MAX_TAGS = 4;
 /** The current role earns more room: it carries the verified "100+ daily alerts" line. */
 const BULLETS_CURRENT = 3;
@@ -30,7 +24,7 @@ function dateRange(entry: Experience): string {
 
 function TimelineEntry({ entry }: { entry: Experience }) {
   const bullets = entry.bullets.slice(0, entry.current ? BULLETS_CURRENT : BULLETS_PAST);
-  const tags = FOCUS_TAGS[entry.id] ?? entry.tags.slice(0, MAX_TAGS);
+  const tags = entry.tags.slice(0, MAX_TAGS);
 
   return (
     <li className="group/entry grid grid-cols-[1rem_1fr] gap-x-4 md:grid-cols-[12rem_1rem_1fr] md:gap-x-8">
@@ -86,7 +80,7 @@ function TimelineEntry({ entry }: { entry: Experience }) {
   );
 }
 
-/** "03 / EXPERIENCE": a short work timeline, plus a recruiter-only credentials strip. */
+/** "EXPERIENCE" (auto-numbered): a short work timeline, plus a recruiter-only credentials strip. */
 export function ExperiencePreview() {
   const roles = getExperience().filter((entry) => !NON_WORK_IDS.has(entry.id));
   const verified = getCertifications().filter((cert) => cert.status === "verified");
@@ -94,7 +88,7 @@ export function ExperiencePreview() {
   return (
     <Section
       id="experience"
-      index="03"
+      autoNumber
       label="EXPERIENCE"
       title="Where I've worked."
       intro="Hands-on SOC work in an enterprise environment: alert triage, incident response and detection engineering."

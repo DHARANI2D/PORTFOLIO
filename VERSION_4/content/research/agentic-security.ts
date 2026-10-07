@@ -11,6 +11,8 @@ export const agenticSecurity = {
   tagline: "Autonomous security agents, and trustworthy AI remediation.",
   abstract:
     "A research direction on autonomous security agents and trustworthy AI remediation: how to let agents act on security problems without trusting their claims by default. It is a direction, not a published result.",
+  metaDescription:
+    "Agentic Security is a research direction on autonomous security agents and trustworthy AI remediation. It is a direction, not a published result.",
   notes: [
     "An agent that can act has a larger attack surface than one that only answers, because its inputs can now cause actions.",
     "Trust should be earned per action, not granted per agent.",

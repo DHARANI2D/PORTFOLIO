@@ -24,8 +24,7 @@ export function isGraphNodeId(value: string): value is GraphNodeId {
 }
 
 /**
- * Conceptual relations between the domains. A ring around the viewport plus two short chords, so
- * the middle of the screen (where the text is) stays clear.
+ * Conceptual relations between the domains: a ring (the first seven) plus two chords.
  */
 export const GRAPH_EDGES: readonly (readonly [GraphNodeId, GraphNodeId])[] = [
   ["soc", "detection"],
@@ -39,30 +38,30 @@ export const GRAPH_EDGES: readonly (readonly [GraphNodeId, GraphNodeId])[] = [
   ["soc", "automation"],
 ];
 
-export type GraphLayoutName = "wide" | "tall";
-type Placement = Readonly<Record<GraphNodeId, readonly [x: number, y: number]>>;
-
 /**
- * Node positions as percentages of the viewport, one layout per orientation. Both keep nodes out of
- * the first ~12% of the height (the sticky header) and inside the viewport at 320px wide.
+ * The graph lives in the two empty margins either side of the page's text column, never over it.
+ * Every node sits on one of two vertical rails (the centre line of each margin); only `y` varies.
+ * An edge between two nodes on the same rail runs down the margin; an edge between the rails is a
+ * chord, and the renderer fades a chord out before it reaches the text column (see
+ * security-graph.module.css), so no graph pixel is ever painted behind text.
+ *
+ * `y` is a percentage of the viewport height. All nodes stay below ~18% (the sticky header band)
+ * and above ~88% so none sits under the header or the footer line on a short viewport.
  */
-export const GRAPH_LAYOUTS: Readonly<Record<GraphLayoutName, Placement>> = {
-  wide: {
-    soc: [6, 36],
-    detection: [27, 15],
-    cloud: [62, 13],
-    ai: [92, 31],
-    agents: [94, 70],
-    automation: [68, 90],
-    dfir: [19, 82],
-  },
-  tall: {
-    soc: [14, 20],
-    detection: [62, 14],
-    cloud: [90, 30],
-    ai: [80, 52],
-    agents: [90, 76],
-    automation: [50, 90],
-    dfir: [12, 68],
-  },
+export type GraphSide = "left" | "right";
+export type GraphPlacement = { readonly side: GraphSide; readonly y: number };
+
+export const GRAPH_PLACEMENT: Readonly<Record<GraphNodeId, GraphPlacement>> = {
+  detection: { side: "left", y: 20 },
+  soc: { side: "left", y: 46 },
+  dfir: { side: "left", y: 78 },
+  cloud: { side: "right", y: 24 },
+  ai: { side: "right", y: 44 },
+  agents: { side: "right", y: 64 },
+  automation: { side: "right", y: 84 },
 };
+
+/** The edges that stay inside one margin. Every other edge is a chord that fades out toward the text. */
+export function isRailEdge(from: GraphNodeId, to: GraphNodeId): boolean {
+  return GRAPH_PLACEMENT[from].side === GRAPH_PLACEMENT[to].side;
+}

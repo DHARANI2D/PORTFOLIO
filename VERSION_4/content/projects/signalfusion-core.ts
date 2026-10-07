@@ -14,7 +14,9 @@ export const signalfusionCore = {
   domain: ["Detection", "SOC", "Correlation", "MITRE ATT&CK"],
   tagline: "From disconnected alerts to contextual investigations.",
   summary:
-    "Normalizes endpoint, cloud and identity telemetry, correlates entities across time, and maps behavior to MITRE ATT&CK to surface multi-stage and lateral-movement attacks.",
+    "A SOC sees thousands of independent signals, while an attack unfolds as a sequence. Correlating signals into relationships is meant to improve signal-to-noise and give analysts context instead of fragments.",
+  metaDescription:
+    "SignalFusion Core correlates endpoint, cloud and identity telemetry by entity and time to turn disconnected alerts into contextual investigations.",
   overview: [
     "SignalFusion Core is threat signal correlation and SOC orchestration with AI-assisted investigation. It normalizes telemetry across endpoint, cloud and identity systems and correlates entities across time.",
     "It correlates signals into behavioral relationships rather than isolated events, and models attacker behavior with MITRE ATT&CK to surface multi-stage and lateral-movement attacks.",
@@ -23,7 +25,13 @@ export const signalfusionCore = {
   problem: [
     "SOCs see thousands of independent signals, while real attacks unfold as sequences across identities, endpoints, applications and cloud infrastructure.",
   ],
-  flow: ["SIEM / IDS / EDR / Threat Intel", "Correlation engine", "AI investigation", "Response"],
+  flow: [
+    "SIEM / IDS / EDR / Threat Intel",
+    "Correlation engine",
+    "AI investigation",
+    "Analyst review",
+    "Response",
+  ],
   stack: ["Python", "Elasticsearch", "SIEM", "AI"],
   architecture: {
     nodes: [
@@ -83,7 +91,7 @@ export const signalfusionCore = {
         row: 1,
         input: "Correlated, mapped sequences.",
         process: "Assembles disconnected alerts into a contextual investigation.",
-        output: "An investigation with its context and the signals behind it.",
+        output: "An investigation with its context and the signals behind it, sent to the analyst.",
         trustBoundary: "AI output is an input to a decision, not the decision.",
       },
       {
@@ -104,8 +112,8 @@ export const signalfusionCore = {
         sublabel: "Act on the finding",
         kind: "output",
         col: 5,
-        row: 1,
-        input: "A decision on the investigation.",
+        row: 2,
+        input: "The analyst’s decision on the investigation.",
         process: "Carries the decision into action.",
       },
     ],
@@ -114,7 +122,6 @@ export const signalfusionCore = {
       ["normalize", "correlation"],
       ["correlation", "attack"],
       ["attack", "investigation"],
-      ["investigation", "response"],
       ["investigation", "analyst"],
       ["analyst", "response"],
     ],
@@ -128,7 +135,7 @@ export const signalfusionCore = {
       { id: "oversight", label: "Human judgment", nodeIds: ["analyst"] },
     ],
     caption:
-      "Schematic of the design. Signals are normalized, correlated by entity and time, mapped to ATT&CK, investigated with AI assistance, and acted on after review.",
+      "Schematic of the design. Signals are normalized, correlated by entity and time, mapped to ATT&CK and investigated with AI assistance. An analyst reviews the investigation, and only the analyst’s decision leads to a response.",
   },
   threatModel: {
     assets: [
@@ -142,12 +149,12 @@ export const signalfusionCore = {
       "Fields in logs and alerts that an attacker can influence, such as hostnames, usernames and URLs",
       "The correlation and ATT&CK mapping logic and its rules",
       "Content passed to the AI investigation step",
-      "The path from an investigation to a response",
+      "The path from an investigation, through the analyst, to a response",
     ],
     trustBoundaries: [
-      "Sources to normalization: telemetry is input. Attacker-influenced fields are handled as data, not instruction.",
+      "Sources to normalization: telemetry is input. Attacker-influenced fields are meant to be handled as data, not instruction.",
       "Automated analysis to analyst: AI output is a recommendation that a person reviews against the underlying signals.",
-      "Investigation to response: a response is a separate decision from a finding.",
+      "Analyst to response: a response follows a person’s decision, not a finding or a model’s output.",
     ],
     threatActors: [
       "An intruder moving through identities, endpoints and cloud resources over several stages, the sequence this system exists to surface",
@@ -174,7 +181,7 @@ export const signalfusionCore = {
       "Correlate by entity and time rather than alert by alert",
       "Map behavior to ATT&CK so sequences read as attacker behavior",
       "Keep the underlying signals attached to every investigation, so a claim can be checked",
-      "Review between AI investigation and response",
+      "Analyst review between AI investigation and response, with no direct path from one to the other",
     ],
   },
   decisions: [
@@ -206,16 +213,16 @@ export const signalfusionCore = {
     {
       question: "Why separate investigation from response?",
       answer:
-        "An investigation says what is happening. A response changes something. Keeping them as separate stages makes the response a deliberate decision, not a side effect of a model’s output.",
+        "An investigation says what is happening. A response changes something. Keeping them as separate stages, with the analyst between them, makes the response a deliberate decision, not a side effect of a model’s output.",
     },
     {
       question: "Why treat telemetry as untrusted input?",
       answer:
-        "Logs and alerts carry fields an attacker can influence. An AI step that reads them can be steered by crafted content. Handling telemetry as data, never as instruction, stops the attacker from directing the investigation.",
+        "Logs and alerts carry fields an attacker can influence. An AI step that reads them can be steered by crafted content. The design treats telemetry as data, not as instruction, so that an attacker does not direct the investigation through the content of a field. That is an aim, not a guarantee, which is why the analyst review and the signals behind each finding stay in the loop.",
     },
   ],
   security: [
-    "Telemetry is attacker-influenced input. Fields such as hostnames, usernames and URLs should reach the AI investigation step as data, never as instructions.",
+    "Telemetry is attacker-influenced input. Fields such as hostnames, usernames and URLs should reach the AI investigation step as data, not as instructions.",
     "The relationships correlation builds between entities describe how accounts, hosts and services connect. They are as useful to an attacker as to a defender, so they need the same protection as the telemetry they come from.",
     "Silence from a source looks the same as a quiet network. Missing telemetry needs its own visibility.",
     "Every finding should carry the signals behind it, so a reviewer can check the story instead of trusting it.",

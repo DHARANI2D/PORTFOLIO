@@ -96,3 +96,4 @@ Threat models, "engineering decisions", failure modes and security consideration
 1. Derive only from what the system is described to do. Never claim an implementation detail ("uses X database", "runs on Y") that is not in section A.
 2. Phrase design reasoning as design intent ("The gate is deterministic so the decision can be replayed and audited"), not as measured results.
 3. Every inferred statement must be listed in `CONTENT_REVIEW.md` (project → statement) so the owner can verify or delete it.
+4. Field-note publication dates are the authoring date (2026-10-04); the owner sets the real date on publication.

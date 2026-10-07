@@ -1,16 +1,21 @@
 import { ArrowUpRight } from "lucide-react";
+import { ButtonLink } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Tag } from "@/components/ui/tag";
 import { getEarlierWork } from "@/lib/content";
+import { site } from "@/lib/site";
 import { cn } from "@/lib/utils";
 
 // Defensive: only plain https links are ever rendered as anchors.
 const isHttps = (url: string | undefined): url is string => !!url && /^https:\/\//i.test(url);
 
 /**
- * Academic and supporting work, shown small under the systems. Engineer view only: the recruiter
- * view keeps the systems and drops this archive. Entries that have no description in the content
- * are listed by name only, never described.
+ * Academic and supporting work, shown small under the systems. This is the one place the home page
+ * lists repositories: an entry with a public GitHub repository links to it, and a single link
+ * under the list goes to the GitHub profile. Everything comes from content/earlier-work.ts. There
+ * is no fetched data, so what ships is what was reviewed. Engineer view only: the recruiter view
+ * keeps the systems and drops this archive. Entries that have no description in the content are
+ * listed by name only, never described.
  */
 export function EarlierWork({ className }: { className?: string }) {
   const work = getEarlierWork();
@@ -70,6 +75,13 @@ export function EarlierWork({ className }: { className?: string }) {
               </ul>
             </div>
           ) : null}
+
+          <div className="mt-8 flex flex-wrap items-center justify-between gap-x-6 gap-y-3 border-t pt-8">
+            <p className="text-sm text-muted">Entries with an arrow have a public repository.</p>
+            <ButtonLink href={site.github} variant="secondary" size="sm" arrow>
+              GITHUB PROFILE
+            </ButtonLink>
+          </div>
         </div>
       </div>
     </div>

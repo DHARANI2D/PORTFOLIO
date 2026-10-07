@@ -3,7 +3,7 @@ import { Section } from "@/components/ui/section";
 import { getSkills } from "@/lib/content";
 
 /**
- * "05 / STACK": skills grouped by domain as quiet mono rows. No levels, bars, clouds or logos.
+ * "STACK" (auto-numbered): skills grouped by domain as quiet mono rows. No levels, bars, clouds or logos.
  * Each group with extra depth gets a native <details> disclosure, so it is keyboard operable,
  * exposes its expanded state to assistive tech and works without JavaScript. Server component, zero client JS.
  * Renders every group in content, so the number of groups is owned by content/skills.ts.
@@ -14,7 +14,7 @@ export function SkillMatrix() {
   return (
     <Section
       id="stack"
-      index="05"
+      autoNumber
       label="STACK"
       title="What I work with."
       intro="Grouped by domain, with no ratings. Open a group to see the depth behind it."

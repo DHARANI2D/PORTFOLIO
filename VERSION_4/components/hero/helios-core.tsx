@@ -17,9 +17,9 @@ const STEPS = [
 ] as const;
 
 /** One beat lights one step while a pulse crosses the connector below it. */
-const BEAT_MS = 1100;
-/** Beats of rest after the last step before the pass starts again. */
-const REST_BEATS = 2;
+const BEAT_MS = 1000;
+/** Pause before the first beat. With four beats the whole pass is 4.6 s, under the 5 s limit. */
+const START_DELAY_MS = 600;
 
 /**
  * One pulse crossing a connector: it slides from above the connector to below it (-100% to 200% of
@@ -55,12 +55,13 @@ const ARIA_LABEL = `Helios security core. Pipeline: ${STEPS.map((s) => s.name.to
 
 /**
  * "HELIOS SECURITY CORE": a calm, bordered panel with the Helios mark and the vertical pipeline.
- * One accent signal travels down it and lights each step in turn.
+ * One accent signal travels down it once and lights each step in turn.
  *
- * The server HTML shows the full pipeline with every step readable. Motion is an enhancement: it
- * runs only while the panel is on screen and motion is allowed. With reduced motion every step is
- * shown lit and nothing moves. The panel is one image to assistive tech (role="img"), so the
- * decorative parts are never announced piecemeal.
+ * The server HTML shows the full pipeline with every step readable. Motion is an enhancement: one
+ * pass of 4.6 s (WCAG 2.2.2: nothing moves for more than 5 s), and only while the panel is on
+ * screen and motion is allowed. It then rests with every step lit, which is also the state under
+ * reduced motion, where nothing moves at all. The panel is one image to assistive tech
+ * (role="img"), so the decorative parts are never announced piecemeal.
  */
 export function HeliosCore({ className }: { className?: string }) {
   const rootRef = useRef<HTMLDivElement>(null);
@@ -68,18 +69,26 @@ export function HeliosCore({ className }: { className?: string }) {
   const pulseRefs = useRef<(HTMLSpanElement | null)[]>([]);
   const reduced = usePrefersReducedMotion();
   const inView = useInView(rootRef);
-  // Index of the lit step; -1 while at rest.
+  // Index of the lit step while the pass runs; -1 before it starts.
   const [beat, setBeat] = useState(-1);
-  const running = inView && !reduced;
+  // The single pass is over: rest with every step lit.
+  const [done, setDone] = useState(false);
+  // The next beat to play. Kept in a ref so leaving and re-entering the view resumes the pass
+  // where it stopped instead of restarting it.
+  const nextBeat = useRef(0);
+  const running = inView && !reduced && !done;
 
   useEffect(() => {
     if (!running) return;
-    let next = 0;
     let timer = 0;
     let pulse: { stop: () => void } | undefined;
     const tick = () => {
-      const step = next;
-      setBeat(step < STEPS.length ? step : -1);
+      const step = nextBeat.current;
+      if (step >= STEPS.length) {
+        setDone(true);
+        return;
+      }
+      setBeat(step);
       const element = pulseRefs.current[step];
       // Web Animations API (Motion's mini animate). Older engines just skip the pulse.
       if (element && typeof element.animate === "function") {
@@ -90,10 +99,10 @@ export function HeliosCore({ className }: { className?: string }) {
           times: [0, 0.2, 0.8, 1],
         });
       }
-      next = (next + 1) % (STEPS.length + REST_BEATS);
+      nextBeat.current = step + 1;
       timer = window.setTimeout(tick, BEAT_MS);
     };
-    timer = window.setTimeout(tick, 600);
+    timer = window.setTimeout(tick, nextBeat.current === 0 ? START_DELAY_MS : 0);
     return () => {
       window.clearTimeout(timer);
       pulse?.stop();
@@ -114,7 +123,7 @@ export function HeliosCore({ className }: { className?: string }) {
 
       <ol className="surface-grid px-4 py-6 sm:px-6">
         {STEPS.map((step, index) => {
-          const lit = reduced || beat === index;
+          const lit = reduced || done || beat === index;
           const isLast = index === STEPS.length - 1;
           return (
             <li

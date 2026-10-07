@@ -8,8 +8,9 @@ import { cn } from "@/lib/utils";
 
 const SIGNAL_NODES: GraphNodeId[] = ["soc", "detection", "cloud", "ai", "automation"];
 
+/** The owner's stated positioning (docs/FACTS.md section B), in the first person. */
 const STATEMENT =
-  "I'm a security engineer focused on building systems that make security operations more intelligent, observable, and dependable.";
+  "I'm a security engineer building detection, correlation and AI security systems from first principles.";
 
 /** Career chain. Each caption restates a line of the verified experience or system descriptions. */
 const CHAIN = [
@@ -68,7 +69,7 @@ const STAGGER = [
  */
 export function SignalSection() {
   return (
-    <Section id="signal" index="01" label="SIGNAL" title="From alerts to systems.">
+    <Section id="signal" autoNumber label="SIGNAL" title="From alerts to systems.">
       <p className="max-w-3xl text-2xl leading-snug font-medium tracking-tight md:text-3xl">
         {STATEMENT}
       </p>

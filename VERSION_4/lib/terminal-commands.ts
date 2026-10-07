@@ -13,12 +13,17 @@ import { fuzzyScore } from "@/lib/fuzzy";
  *
  * Why the data arrives as `ctx` instead of being imported here: lib/content.ts validates every
  * entry with zod at module load. Importing it from this file would put zod and the full case-study
- * text into the client bundle of every page just for an easter egg. Instead the terminal loads the
- * data with a dynamic import on first open (components/terminal/terminal-context.ts) and hands it
- * to runCommand. The `import type` lines above are erased at build time.
+ * text into the client bundle just for an easter egg (and zod's feature probe, `new Function("")`,
+ * is reported by a strict CSP as an eval violation). Instead the server builds plain data from the
+ * validated content (lib/terminal-data.ts), the client dialog receives it as props, and it is
+ * handed to runCommand on every command. The `import type` lines above are erased at build time;
+ * a unit test keeps it that way.
  *
  * Every line printed comes from `ctx` (content) or from the command table below. Nothing about the
  * owner is hard-coded here.
+ *
+ * User input never indexes a plain object: names come from Maps and Sets, so words such as
+ * `constructor` and `__proto__` are ordinary unknown words, not prototype members.
  */
 
 export type TerminalSite = {
@@ -58,6 +63,9 @@ export type TerminalContext = {
   theme?: "dark" | "light";
   view?: "engineer" | "recruiter";
 };
+
+/** What the server hands to the client: the context minus the preferences, which are read at run time. */
+export type TerminalData = Omit<TerminalContext, "theme" | "view">;
 
 export type TerminalResult = {
   lines: string[];
@@ -107,22 +115,22 @@ function echo(value: string): string {
   return clean.length > 40 ? `${clean.slice(0, 40)}...` : clean;
 }
 
-/** Fixed pages reachable with `open <name>`. */
-const PAGES: Readonly<Record<string, string>> = {
-  home: "/",
-  about: "/about/",
-  experience: "/experience/",
-  work: "/experience/",
-  systems: "/systems/",
-  projects: "/systems/",
-  research: "/research/",
-  writing: "/writing/",
-  certifications: "/certifications/",
-  certs: "/certifications/",
-  resume: "/resume/",
-  contact: "/contact/",
-  privacy: "/privacy/",
-};
+/** Fixed pages reachable with `open <name>`. A Map, so `open constructor` or `open __proto__` finds nothing. */
+const PAGES: ReadonlyMap<string, string> = new Map([
+  ["home", "/"],
+  ["about", "/about/"],
+  ["experience", "/experience/"],
+  ["work", "/experience/"],
+  ["systems", "/systems/"],
+  ["projects", "/systems/"],
+  ["research", "/research/"],
+  ["writing", "/writing/"],
+  ["certifications", "/certifications/"],
+  ["certs", "/certifications/"],
+  ["resume", "/resume/"],
+  ["contact", "/contact/"],
+  ["privacy", "/privacy/"],
+]);
 
 const DOMAIN_LABEL: Readonly<Record<GraphNodeId, string>> = {
   soc: "SOC",
@@ -324,8 +332,8 @@ function resolveTarget(args: string[], ctx: TerminalContext): { target?: Target;
   if (first === undefined) return {};
 
   if (words.length === 1) {
-    const page = PAGES[first];
-    if (page) return { target: { href: page, label: first } };
+    const page = PAGES.get(first);
+    if (page !== undefined) return { target: { href: page, label: first } };
   }
 
   let scope: "research" | "system" | null = null;

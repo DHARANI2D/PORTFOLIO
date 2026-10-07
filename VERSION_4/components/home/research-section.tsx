@@ -7,8 +7,9 @@ import { Section } from "@/components/ui/section";
 import { getResearch } from "@/lib/content";
 
 /**
- * "04 / RESEARCH": one card per research direction. Engineer view only, so the wrapper carries
- * data-engineer-only (Section does not forward attributes) and recruiter view hides the whole block.
+ * "RESEARCH" (auto-numbered): one card per research direction. Engineer view only, so the wrapper
+ * carries data-engineer-only (Section does not forward attributes) and recruiter view hides the
+ * whole block. Hidden sections do not take a number, so the others stay continuous.
  */
 export function ResearchSection() {
   const items = getResearch();
@@ -17,7 +18,7 @@ export function ResearchSection() {
     <div data-engineer-only>
       <Section
         id="research"
-        index="04"
+        autoNumber
         label="RESEARCH"
         title="Building trustworthy autonomous security."
         intro="Research directions in AI security and autonomous agents."

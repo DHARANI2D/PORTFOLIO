@@ -67,8 +67,13 @@ export const Project = z.object({
   domain: z.array(z.string()),
   /** Layer 1 — 3 seconds. One short line. */
   tagline: z.string(),
-  /** Layer 2 — 30 seconds. One or two sentences on why it matters. */
+  /** Layer 2 — 30 seconds. One or two sentences on why it matters. Not a restatement of the tagline. */
   summary: z.string(),
+  /**
+   * Meta description for search and social previews: one complete sentence, at most 160
+   * characters (content tests hold it to 155). Written separately from `summary`, which is longer.
+   */
+  metaDescription: z.string().max(160).optional(),
   /** Layer 3 — 5 minutes. Body paragraphs for the case-study page. */
   overview: z.array(z.string()).default([]),
   problem: z.array(z.string()).default([]),
@@ -125,6 +130,11 @@ export const ResearchItem = z.object({
   title: z.string(),
   tagline: z.string(),
   abstract: z.string(),
+  /**
+   * Meta description for search and social previews: one complete sentence, at most 160
+   * characters (content tests hold it to 155). The abstract is usually too long to cut cleanly.
+   */
+  metaDescription: z.string().max(160).optional(),
   notes: z.array(z.string()).default([]),
   /** Slugs of related /systems entries. */
   relatedProjects: z.array(z.string()).default([]),

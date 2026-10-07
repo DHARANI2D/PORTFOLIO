@@ -61,23 +61,42 @@ export function Logo({ className, onClick }: LogoProps) {
   );
 }
 
-/** Accent status dot. The ping runs only when motion is allowed; reduced motion gets a still dot. */
+/**
+ * Accent status dot. The ping is three pulses, then the dot rests (the animation is finite, see
+ * .status-ping in app/globals.css: nothing may animate for more than 5 seconds). Reduced motion
+ * never gets the keyframes. `pulse={false}` renders a still dot (footer).
+ */
 export function StatusDot({ pulse = true, className }: { pulse?: boolean; className?: string }) {
   return (
     <span aria-hidden className={cn("relative inline-flex size-1.5 shrink-0", className)}>
       {pulse ? (
-        <span className="absolute inset-0 rounded-full bg-accent opacity-40 motion-safe:animate-ping" />
+        <span className="status-ping absolute inset-0 rounded-full bg-accent opacity-40" />
       ) : null}
-      <span className="relative size-1.5 rounded-full bg-accent" />
+      <span className="status-dot relative size-1.5 rounded-full bg-accent" />
     </span>
   );
 }
 
-/** "● AVAILABLE FOR SECURITY ENGINEERING" (copy from lib/site.ts). */
-export function AvailabilityStatus({ className }: { className?: string }) {
+/**
+ * "● AVAILABLE FOR SECURITY ENGINEERING" (copy from lib/site.ts). One line from the `xs` breakpoint
+ * up; below it the line wraps, because at 320px the nowrap text is 283px in a 272px column.
+ */
+export function AvailabilityStatus({
+  className,
+  pulse = true,
+}: {
+  className?: string;
+  /** false renders a still dot, for places that are rarely on screen when the page loads (footer). */
+  pulse?: boolean;
+}) {
   return (
-    <p className={cn("flex items-center gap-2 label-mono whitespace-nowrap text-muted", className)}>
-      <StatusDot />
+    <p
+      className={cn(
+        "flex items-start gap-2 label-mono text-muted xs:items-center xs:whitespace-nowrap",
+        className,
+      )}
+    >
+      <StatusDot pulse={pulse} className="mt-[0.2rem] xs:mt-0" />
       <span>{site.availability}</span>
     </p>
   );

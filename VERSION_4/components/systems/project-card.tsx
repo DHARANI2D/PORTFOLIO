@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { MiniDiagram } from "@/components/systems/mini-diagram";
+import { pageKind } from "@/components/systems/project-meta";
 import { Label } from "@/components/ui/label";
 import { Tag } from "@/components/ui/tag";
 import type { Project } from "@/content/schema";
@@ -42,14 +43,15 @@ function depthOf(project: Project): string[] {
   return parts;
 }
 
-function Cue() {
-  // The link carries the accessible name, so the cue is decorative.
+function Cue({ project }: { project: Project }) {
+  // The link carries the accessible name, so the cue is decorative. Only a system with an
+  // architecture diagram has a case study. The others have a short overview, and say so.
   return (
     <span
       aria-hidden
       className="inline-flex items-center gap-2 label-mono text-muted transition-colors duration-200 group-hover/card:text-foreground motion-reduce:transition-none"
     >
-      CASE STUDY
+      {pageKind(project).toUpperCase()}
       <ArrowRight className="size-3.5 transition-transform duration-200 motion-safe:group-hover/card:translate-x-0.5 motion-reduce:transition-none" />
     </span>
   );
@@ -72,14 +74,14 @@ function CardLink({ project }: { project: Project }) {
   return (
     <Link href={`/systems/${project.slug}/`} className={stretchedLink}>
       {project.name}
-      <span className="sr-only"> case study</span>
+      <span className="sr-only"> {pageKind(project)}</span>
     </Link>
   );
 }
 
 /**
  * A system as a component, not a picture: header strip (category, status), body (name, tagline,
- * flow), footer strip (domains, stack, depth of the case study). Visual weight follows the tier.
+ * flow), footer strip (domains, stack, depth of the page). Visual weight follows the tier.
  * Server component.
  */
 export function ProjectCard({ project, size, className }: ProjectCardProps) {
@@ -100,7 +102,7 @@ export function ProjectCard({ project, size, className }: ProjectCardProps) {
           <p className="mt-2 text-sm text-muted">{project.tagline}</p>
         </div>
         <Domains project={project} />
-        <Cue />
+        <Cue project={project} />
       </article>
     );
   }
@@ -157,7 +159,7 @@ export function ProjectCard({ project, size, className }: ProjectCardProps) {
             </p>
           ) : null}
         </div>
-        <Cue />
+        <Cue project={project} />
       </div>
     </article>
   );

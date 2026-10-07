@@ -116,8 +116,9 @@ export default function SystemsPage() {
             Systems, not demos.
           </h1>
           <p className={cn("mt-8 max-w-2xl text-lg text-muted md:text-xl", rise, "delay-100")}>
-            Detection, correlation and AI security systems. Each one has a case study. The longer
-            ones cover the architecture, the threat model and the engineering decisions.
+            Detection, correlation and AI security systems. The ones with an architecture diagram
+            have a full case study: the architecture, the threat model and the engineering
+            decisions. The others have a short overview.
           </p>
         </Container>
       </section>

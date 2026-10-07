@@ -7,6 +7,7 @@ import {
   INIT_SCRIPT,
   PREFERENCES_EVENT,
   THEME_KEY,
+  THEME_SWITCHING_ATTRIBUTE,
   VIEW_KEY,
   applyTheme,
   applyView,
@@ -21,7 +22,12 @@ const html = () => document.documentElement;
 /** Runs the inline init script the way the browser does: as classic script text in the page. */
 const runInitScript = () => new Function(INIT_SCRIPT)();
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.useRealTimers();
+  html().classList.remove("js");
+  html().removeAttribute(THEME_SWITCHING_ATTRIBUTE);
+});
 
 describe("defaults", () => {
   it("are dark and engineer", () => {
@@ -60,6 +66,18 @@ describe("apply and read round trip", () => {
     expect(localStorage.getItem(VIEW_KEY)).toBe("recruiter");
     expect(listener).toHaveBeenCalledTimes(1);
     window.removeEventListener(PREFERENCES_EVENT, listener);
+  });
+
+  it("applyTheme turns transitions off for two frames while the theme repaints", () => {
+    vi.useFakeTimers({ toFake: ["requestAnimationFrame"] });
+    applyTheme("light");
+    // On <html> from the moment of the change, so app/globals.css can switch transitions off.
+    expect(html().hasAttribute(THEME_SWITCHING_ATTRIBUTE)).toBe(true);
+    vi.advanceTimersToNextFrame();
+    expect(html().hasAttribute(THEME_SWITCHING_ATTRIBUTE)).toBe(true);
+    vi.advanceTimersToNextFrame();
+    expect(html().hasAttribute(THEME_SWITCHING_ATTRIBUTE)).toBe(false);
+    expect(html().dataset.theme).toBe("light");
   });
 
   it("toggleTheme flips between dark and light", () => {
@@ -153,6 +171,32 @@ describe("INIT_SCRIPT", () => {
     } finally {
       if (original) Object.defineProperty(globalThis, "localStorage", original);
     }
+  });
+
+  it('adds the "js" class: the server HTML ships without it, so CSS can hide script-only controls', () => {
+    expect(html().classList.contains("js")).toBe(false);
+    runInitScript();
+    expect(html().classList.contains("js")).toBe(true);
+    // Running it again (a second inline copy, a bfcache restore) does not duplicate or remove it.
+    runInitScript();
+    expect(
+      html()
+        .className.split(/\s+/)
+        .filter((name) => name === "js"),
+    ).toHaveLength(1);
+  });
+
+  it('adds the "js" class even when storage is blocked and keeps the classes already on <html>', () => {
+    html().classList.add("font-variable");
+    vi.stubGlobal("localStorage", {
+      getItem: () => {
+        throw new DOMException("blocked", "SecurityError");
+      },
+    });
+    runInitScript();
+    expect(html().classList.contains("js")).toBe(true);
+    expect(html().classList.contains("font-variable")).toBe(true);
+    html().classList.remove("font-variable");
   });
 
   it("is a single self-contained statement that cannot end its own <script> element", () => {

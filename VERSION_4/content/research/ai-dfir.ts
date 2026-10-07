@@ -11,6 +11,8 @@ export const aiDfir = {
   tagline: "Agentic incident-response architecture.",
   abstract:
     "A research direction on agentic architecture for incident response: how autonomous agents could take part in digital forensics and incident response. It is a direction, not a published result.",
+  metaDescription:
+    "AI DFIR is a research direction on agentic incident-response architecture: how autonomous agents could take part in forensics and incident response.",
   notes: [
     "Incident response is a sequence of decisions under time pressure. An agentic design has to say which steps are safe to automate and which need a person, and that boundary moves with the cost of being wrong.",
     "Evidence handling constrains the design. An agent that touches a system during an investigation can change what it is investigating.",

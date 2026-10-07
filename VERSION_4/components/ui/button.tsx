@@ -6,7 +6,8 @@ import { cn } from "@/lib/utils";
 /**
  * Buttons are mono, uppercase and flat: structure comes from a 1px border, not shadow.
  * - primary: the one accent fill on a page. The fill is the accent token mixed toward black so
- *   white text keeps >= 4.5:1 in the dark theme (the raw accent is ~4.2:1 against white).
+ *   white text keeps >= 4.5:1 in the dark theme (the raw accent is ~4.2:1 against white). In
+ *   forced-colors mode the fill is dropped, so it gets a visible border instead.
  * - secondary: 1px border, transparent fill.
  * - ghost: text only, for quiet controls.
  * Touch: every size reaches 44px on narrow viewports and coarse pointers.
@@ -21,7 +22,7 @@ export const buttonVariants = cva(
     variants: {
       variant: {
         primary:
-          "border-transparent bg-[color-mix(in_srgb,var(--accent)_86%,black)] text-accent-foreground hover:bg-[color-mix(in_srgb,var(--accent)_72%,black)]",
+          "border-transparent bg-[color-mix(in_srgb,var(--accent)_86%,black)] text-accent-foreground hover:bg-[color-mix(in_srgb,var(--accent)_72%,black)] forced-colors:border-current",
         secondary:
           "border-border-strong bg-transparent text-foreground hover:border-muted hover:bg-surface-hover",
         ghost:

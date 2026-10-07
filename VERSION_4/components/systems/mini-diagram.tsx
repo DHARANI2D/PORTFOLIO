@@ -1,5 +1,6 @@
 import { ViewTransition } from "react";
 import "@/components/hero/home-motion.css";
+import { FlowHost } from "@/components/hero/flow-host";
 import { cn } from "@/lib/utils";
 
 type MiniDiagramProps = {
@@ -20,15 +21,16 @@ type MiniDiagramProps = {
  * to right. It is a plain ordered list, so the flow reads in order for assistive tech; the nodes
  * and edges are decorative and aria-hidden.
  *
- * Motion is CSS only (see home-motion.css). Ambient: one soft signal pass every few seconds.
+ * Motion is CSS only (see home-motion.css): ONE soft signal pass, started when the diagram scrolls
+ * into view and over in about 4 s, so it never loops and never runs offscreen (WCAG 2.2.2).
  * Hovering or focusing the host card (marked data-flow-host) lights every stage in sequence.
  * With reduced motion nothing animates and hover simply lights the stages.
  *
- * Server component: no JS.
+ * Server component. The only client code is the small FlowHost leaf that starts the pass.
  */
 export function MiniDiagram({ flow, slug, className, label = "Signal flow" }: MiniDiagramProps) {
   const diagram = (
-    <div className={cn("@container", className)}>
+    <FlowHost className={cn("@container", className)}>
       <ol role="list" aria-label={label} className="flex flex-col @md:flex-row">
         {flow.map((stage, index) => (
           <li
@@ -56,7 +58,7 @@ export function MiniDiagram({ flow, slug, className, label = "Signal flow" }: Mi
           </li>
         ))}
       </ol>
-    </div>
+    </FlowHost>
   );
 
   return slug ? <ViewTransition name={`diagram-${slug}`}>{diagram}</ViewTransition> : diagram;

@@ -82,6 +82,7 @@ export function CommandPalette({ items }: { items: SearchItem[] }) {
 
   const baseId = useId();
   const listboxId = `${baseId}-listbox`;
+  const shortcutsHintId = `${baseId}-shortcuts-hint`;
   const optionId = (index: number) => `${baseId}-option-${index}`;
 
   const results = buildPaletteResults(items, query, view);
@@ -373,20 +374,25 @@ export function CommandPalette({ items }: { items: SearchItem[] }) {
               <kbd className="font-mono">esc</kbd> close
             </span>
           </p>
+          {/* WCAG 2.5.3 (label in name): the visible words open the accessible name, so a speech-input
+              user who says them reaches the control. ON / OFF stays hidden because aria-pressed
+              already carries the state; the long explanation is the description, not the name. */}
           <button
             type="button"
             aria-pressed={sequencesEnabled}
+            aria-describedby={shortcutsHintId}
             onClick={() => setSequencesEnabled(!sequencesEnabled)}
             title="Press G, then H home, S systems, E experience, R research, W writing, A about, C contact. Click to turn these shortcuts off or on."
             className="inline-flex min-h-6 items-center gap-2 rounded-sm label-mono text-muted transition-colors duration-200 hover:text-foreground motion-reduce:transition-none"
           >
-            <span aria-hidden>G then H S E R W A C</span>
+            <span>G then H S E R W A C</span>
             <span aria-hidden>{sequencesEnabled ? "ON" : "OFF"}</span>
-            <span className="sr-only">
-              Go-to keyboard shortcuts: press G, then H for home, S systems, E experience, R
-              research, W writing, A about, C contact. Active when this palette is closed.
-            </span>
+            <span className="sr-only">, Go-to keyboard shortcuts</span>
           </button>
+          <span id={shortcutsHintId} className="sr-only">
+            Press G, then H for home, S systems, E experience, R research, W writing, A about, C
+            contact. Active when this palette is closed.
+          </span>
         </div>
       </div>
     </Dialog>

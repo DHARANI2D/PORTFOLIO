@@ -13,9 +13,10 @@ import { buildMetadata } from "@/lib/seo";
 export const metadata: Metadata = buildMetadata({ path: "/" });
 
 /**
- * Home. Hero, then the numbered sections of the site:
- * 01 SIGNAL, 02 SYSTEMS, 03 EXPERIENCE, 04 RESEARCH, 05 STACK, 06 FIELD NOTES, 07 CONTACT.
- * Each section component renders its own numbered <Section>.
+ * Home. Hero, then the numbered sections of the site, in this order: SIGNAL, SYSTEMS, EXPERIENCE,
+ * RESEARCH, STACK, FIELD NOTES, CONTACT (01 to 07 in engineer view).
+ * Each section component renders its own <Section autoNumber>. The numbers are a CSS counter, so
+ * the recruiter view, which hides RESEARCH and FIELD NOTES, still reads 01, 02, 03, 04, 05.
  */
 export default function HomePage() {
   return (

@@ -12,7 +12,10 @@ const OPTIONS: readonly { value: View; label: string }[] = [
 
 type ViewToggleProps = {
   className?: string;
-  /** Compact (header): the "VIEW AS" label is visually hidden and the segments are tighter. */
+  /**
+   * Compact (header): tighter segments, and the "VIEW AS" label is visually hidden below xl, where
+   * the header has no room for it. From xl up it is spelled out so the pills read as a control.
+   */
   compact?: boolean;
   /** Fill the available width (mobile sheet). */
   stretch?: boolean;
@@ -21,7 +24,9 @@ type ViewToggleProps = {
 /**
  * "VIEW AS [ ENGINEER ] [ RECRUITER ]". The preference only flips <html data-view>, so the same
  * HTML serves both views and CSS decides what shows. Selection is shown by fill, border and text
- * brightness, and exposed as aria-pressed.
+ * brightness, and exposed as aria-pressed. In forced-colors mode the pressed segment gets a
+ * Highlight fill (button[aria-pressed="true"] in app/globals.css). The group is always named by
+ * the "VIEW AS" text, visible or not.
  */
 export function ViewToggle({ className, compact = false, stretch = false }: ViewToggleProps) {
   const view = useView();
@@ -32,7 +37,12 @@ export function ViewToggle({ className, compact = false, stretch = false }: View
       aria-labelledby={labelId}
       className={cn("items-center gap-3", stretch ? "flex w-full" : "inline-flex", className)}
     >
-      <span id={labelId} className={compact ? "sr-only" : "label-mono text-muted"}>
+      <span
+        id={labelId}
+        className={
+          compact ? "sr-only xl:not-sr-only xl:label-mono xl:text-muted" : "label-mono text-muted"
+        }
+      >
         VIEW AS
       </span>
       <div

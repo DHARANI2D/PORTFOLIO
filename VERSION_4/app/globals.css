@@ -18,6 +18,8 @@
   --accent: #8b5cf6;
   --accent-foreground: #ffffff;
   --accent-soft: rgb(139 92 246 / 0.14);
+  /* Accent as a fill behind white text: the raw dark-theme accent is 4.23:1 against white, this is 5.4:1. */
+  --accent-strong: color-mix(in srgb, var(--accent) 86%, black);
   --grid-line: rgb(255 255 255 / 0.035);
 }
 
@@ -36,6 +38,24 @@
   --grid-line: rgb(0 0 0 / 0.04);
 }
 
+/*
+ * Metric-matched stand-in for Geist Sans, for the moment before the font file arrives, on systems
+ * where next/font's own fallback does not resolve. That one is `local(Arial)` (see app/layout.tsx),
+ * and Linux, Chrome OS and Android have no font named "Arial". Liberation Sans and Arimo are
+ * metric-compatible with Arial and Roboto is within a couple of percent, so the same overrides fit.
+ * The numbers are the ones next/font computes for Geist Sans against Arial; check them against the
+ * generated "geistSans Fallback" rule in the build output if the font file is ever replaced.
+ * Mono has no stand-in: the system monospace stack already has Geist Mono's 0.6em advance.
+ */
+@font-face {
+  font-family: "Geist Fallback";
+  src: local("Liberation Sans"), local("Arimo"), local("Roboto"), local("Roboto-Regular");
+  size-adjust: 106.28%;
+  ascent-override: 94.56%;
+  descent-override: 27.76%;
+  line-gap-override: 0%;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -47,7 +67,7 @@
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent-soft: var(--accent-soft);
-  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-geist-sans), "Geist Fallback", ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
   --breakpoint-xs: 30rem;
 }
@@ -73,7 +93,7 @@
     overflow-x: clip;
   }
   ::selection {
-    background: var(--accent);
+    background: var(--accent-strong);
     color: var(--accent-foreground);
   }
   :focus-visible {
@@ -157,13 +177,16 @@
   color: var(--shiki-light);
 }
 
-/* Screen-reader-only + skip link */
+/*
+ * Skip link: first tab stop on every page. White text on the strong accent fill is 5.4:1 in dark
+ * and 8.7:1 in light (the raw dark accent is 4.23:1, below AA for 12px text).
+ */
 .skip-link {
   position: fixed;
   left: 1rem;
   top: -4rem;
   z-index: 100;
-  background: var(--accent);
+  background: var(--accent-strong);
   color: var(--accent-foreground);
   padding: 0.5rem 0.75rem;
   border-radius: 0.375rem;
@@ -173,4 +196,91 @@
 }
 .skip-link:focus {
   top: 1rem;
+}
+
+/* Section numbers for UX-15: each Section counts itself, so numbers cannot drift from the order. */
+#main {
+  counter-reset: ds-section;
+}
+.ds-section {
+  counter-increment: ds-section;
+}
+.ds-section-number::before {
+  content: counter(ds-section, decimal-leading-zero);
+}
+
+/*
+ * Status dot ping: three pulses (3 s), then it rests. Nothing on the site may animate for more
+ * than 5 seconds without a way to stop it (WCAG 2.2.2), so this is finite instead of infinite.
+ * The rule sits inside no-preference, so reduced motion never gets the keyframes at all.
+ */
+@keyframes status-ping {
+  75%,
+  100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .status-ping {
+    animation: status-ping 1s cubic-bezier(0, 0, 0.2, 1) 3;
+  }
+}
+
+/*
+ * Theme switch: while data-theme-switching is on <html> (set by applyTheme for two frames) no
+ * transition runs, so the whole page repaints once instead of fading ~400 elements through their
+ * 200 ms colour transitions. A button press is much cheaper this way, especially on phones.
+ */
+[data-theme-switching] *,
+[data-theme-switching] *::before,
+[data-theme-switching] *::after {
+  transition: none !important;
+}
+
+/*
+ * Without JavaScript. The init script in <head> adds the "js" class to <html>; the server HTML
+ * ships without it. Controls that only work with scripts (view and theme toggles, palette,
+ * terminal, the MENU button) are marked data-js-only and are not shown to a visitor without
+ * scripts, where they would be dead buttons. The header also stops being sticky, because the
+ * <noscript> link row below the logo makes it taller than a phone should keep pinned.
+ */
+html:not(.js) [data-js-only] {
+  display: none !important;
+}
+html:not(.js) [data-site-header] {
+  position: static;
+}
+
+/*
+ * Windows High Contrast and other forced-colors modes replace colours with the user's palette and
+ * drop backgrounds, so anything carried by a fill alone disappears. System colours are kept as
+ * written, so selection, focus and the current page are drawn with them.
+ */
+@media (forced-colors: active) {
+  :focus-visible {
+    outline: 2px solid Highlight;
+    outline-offset: 3px;
+  }
+  /* Pressed toggles (VIEW AS, theme) and selected tags: a Highlight fill, like a selected list item. */
+  button[aria-pressed="true"],
+  [data-active] {
+    forced-color-adjust: none;
+    background-color: Highlight;
+    color: HighlightText;
+    border-color: Highlight;
+  }
+  .skip-link {
+    border: 2px solid ButtonText;
+    background-color: Canvas;
+    color: LinkText;
+  }
+  /* The dot is the "available / operational" signal beside its label; keep it visible. */
+  .status-dot {
+    forced-color-adjust: none;
+    background-color: Highlight;
+  }
+  .status-ping {
+    display: none;
+  }
 }
