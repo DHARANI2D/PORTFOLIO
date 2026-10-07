@@ -322,10 +322,15 @@ type PixelReport = {
  * pixels back. Content is hidden, so every pixel is either page background or graph.
  */
 async function graphPixels(page: Page): Promise<PixelReport> {
-  await page.addStyleTag({
-    content:
+  // A constructable stylesheet is CSSOM, which the page's style-src policy allows; addStyleTag
+  // would inject a <style> element and be blocked by the real CSP.
+  await page.evaluate(() => {
+    const sheet = new CSSStyleSheet();
+    sheet.replaceSync(
       "main, header, footer, .skip-link { visibility: hidden !important }" +
-      " *, *::before, *::after { transition: none !important; animation: none !important }",
+        " *, *::before, *::after { transition: none !important; animation: none !important }",
+    );
+    document.adoptedStyleSheets = [...document.adoptedStyleSheets, sheet];
   });
   await page.evaluate(() => {
     const plane = document.querySelector('[data-graph="plane"]');

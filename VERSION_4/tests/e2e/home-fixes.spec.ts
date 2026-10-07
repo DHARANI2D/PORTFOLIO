@@ -185,8 +185,14 @@ test.describe("section numbering", () => {
     expect(sections.map((s) => s.id)).not.toContain("research");
     expect(sections.map((s) => s.id)).not.toContain("writing");
     const counted = sections.filter((s) => s.generated);
-    expect(counted.map((s) => s.id)).toEqual(["signal", "systems", "experience", "stack"]);
-    expect(counted.map((s) => s.number)).toEqual(["01", "02", "03", "04"]);
+    expect(counted.map((s) => s.id)).toEqual([
+      "signal",
+      "systems",
+      "experience",
+      "stack",
+      "contact",
+    ]);
+    expect(counted.map((s) => s.number)).toEqual(["01", "02", "03", "04", "05"]);
   });
 
   test("recruiter view: every home section, CONTACT included, follows on without a gap", async ({
