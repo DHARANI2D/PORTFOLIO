@@ -1,0 +1,160 @@
+/*
+ * Home page motion. Plain CSS (no Tailwind directives) so server components can animate without
+ * shipping any JS. Every animation lives inside prefers-reduced-motion: no-preference. With
+ * reduced motion there is no animation at all and each element sits in its final, fully visible
+ * state. The same is true if CSS animation never runs: the resting style is always the end state.
+ */
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/*
+ * MiniDiagram: ONE signal pass through the stages, then rest. It never loops (WCAG 2.2.2: nothing
+ * may move on its own for more than 5 s). Each stage runs 2.4 s, staggered by 350 ms. The longest
+ * possible diagram (8 stages, the most --flow-i below defines) ends at 7 x 350 + 2400 = 4.85 s;
+ * real cards have 3 to 6 stages and end in about 4.2 s. FlowHost's PASS_MS must stay above that.
+ * The pass starts when the diagram scrolls into view (FlowHost sets data-flow="run"), so it is
+ * never running offscreen.
+ */
+@keyframes flow-fill {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  15%,
+  40% {
+    opacity: 1;
+  }
+}
+
+@keyframes flow-edge-y {
+  0% {
+    opacity: 0.9;
+    transform: scaleY(0);
+  }
+  20% {
+    opacity: 0.9;
+    transform: scaleY(1);
+  }
+  55%,
+  100% {
+    opacity: 0;
+    transform: scaleY(1);
+  }
+}
+
+@keyframes flow-edge-x {
+  0% {
+    opacity: 0.9;
+    transform: scaleX(0);
+  }
+  20% {
+    opacity: 0.9;
+    transform: scaleX(1);
+  }
+  55%,
+  100% {
+    opacity: 0;
+    transform: scaleX(1);
+  }
+}
+
+/* Resting state of the diagram overlays: invisible until a pass or a hover lights them. */
+.flow-fill,
+.flow-edge {
+  opacity: 0;
+}
+.flow-edge {
+  transform-origin: top;
+}
+
+/* Stage position, used for stagger. Eight is more stages than any card has. */
+.flow-step:nth-child(1) {
+  --flow-i: 0;
+}
+.flow-step:nth-child(2) {
+  --flow-i: 1;
+}
+.flow-step:nth-child(3) {
+  --flow-i: 2;
+}
+.flow-step:nth-child(4) {
+  --flow-i: 3;
+}
+.flow-step:nth-child(5) {
+  --flow-i: 4;
+}
+.flow-step:nth-child(6) {
+  --flow-i: 5;
+}
+.flow-step:nth-child(7) {
+  --flow-i: 6;
+}
+.flow-step:nth-child(8) {
+  --flow-i: 7;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* `backwards` holds the start state during the delay, then the element returns to its own
+     normal style, so nothing is left overridden once the entrance is over. */
+  .rise-in {
+    animation: rise-in 700ms cubic-bezier(0.22, 0.7, 0.2, 1) backwards;
+  }
+  .rise-in-1 {
+    animation-delay: 100ms;
+  }
+  .rise-in-2 {
+    animation-delay: 200ms;
+  }
+  .rise-in-3 {
+    animation-delay: 300ms;
+  }
+  .rise-in-4 {
+    animation-delay: 400ms;
+  }
+
+  /* One pass, only while data-flow="run". `both` holds the invisible start state during the
+     stagger delay and the invisible end state after the pass. */
+  [data-flow="run"] .flow-fill {
+    animation: flow-fill 2400ms ease-in-out both;
+    animation-delay: calc(var(--flow-i, 0) * 350ms);
+  }
+  [data-flow="run"] .flow-edge {
+    animation: flow-edge-y 2400ms ease-in-out both;
+    animation-delay: calc(var(--flow-i, 0) * 350ms + 300ms);
+  }
+
+  /* Wide diagrams run left to right. 28rem matches Tailwind's @md container breakpoint, where
+     the markup switches from a vertical to a horizontal layout. */
+  @container (min-width: 28rem) {
+    [data-flow="run"] .flow-edge {
+      animation-name: flow-edge-x;
+      transform-origin: left;
+    }
+  }
+}
+
+/*
+ * Hover or keyboard focus on the card (marked with data-flow-host) stops the ambient pass and lights
+ * every stage in order. The cascade is a transition, so it also works when animation is off.
+ */
+[data-flow-host]:is(:hover, :has(:focus-visible)) .flow-fill,
+[data-flow-host]:is(:hover, :has(:focus-visible)) .flow-edge {
+  animation: none;
+  transform: none;
+  transition: opacity 200ms ease-out calc(var(--flow-i, 0) * 90ms);
+}
+[data-flow-host]:is(:hover, :has(:focus-visible)) .flow-fill {
+  opacity: 1;
+}
+[data-flow-host]:is(:hover, :has(:focus-visible)) .flow-edge {
+  opacity: 0.7;
+}

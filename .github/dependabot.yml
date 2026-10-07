@@ -1,0 +1,27 @@
+# Keeps dependencies and workflow actions current through reviewed pull requests. Minor and patch
+# updates arrive as one grouped PR per ecosystem per week; a major version gets its own PR so the
+# breaking change is read on its own. Dependabot opens PRs only: nothing merges without review, and
+# CI (audit, lint, types, tests, build, e2e) runs on each one.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /VERSION_4
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      minor-and-patch:
+        update-types:
+          - minor
+          - patch
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      actions:
+        update-types:
+          - minor
+          - patch

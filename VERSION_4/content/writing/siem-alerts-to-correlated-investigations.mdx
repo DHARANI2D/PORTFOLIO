@@ -1,0 +1,111 @@
+export const meta = {
+  title: "From SIEM alerts to correlated investigations",
+  summary:
+    "An alert describes one event, but an attack is a sequence. This note covers correlating signals by entity and time, and why an analyst stays in the loop.",
+  date: "2026-10-04",
+  tags: ["Detection", "SOC", "Correlation", "SignalFusion Core"],
+  number: 1,
+};
+
+## Problem
+
+I triage 100+ security alerts a day in an enterprise SOC. Each alert describes one event: a sign-in, a process start, a blocked URL. The decision is rarely about that event alone. It is about what else happened to the same account, host or mailbox before and after it.
+
+<Callout type="problem">
+
+An alert answers “what happened here”. The investigation asks “what is this part of”.
+
+</Callout>
+
+Attacks unfold as sequences across identities, endpoints, applications and cloud infrastructure. Take a chain like this one, which is hypothetical: a phishing email is delivered, a sign-in follows from a new location, a mailbox rule is created, and an internal login appears on a server. That is four alerts from four tools. Each one can be triaged as low on its own. Together they are one story.
+
+Rebuilding that story by hand is slow, repetitive work. Pivot from the alert to the entity, then to every other source that mentions it, then put the results in order. Correlation moves that rebuilding into the pipeline, so the analyst starts from the sequence instead of the fragment.
+
+This note is design reasoning. [SignalFusion Core](/systems/signalfusion-core/) is the system where I work it through.
+
+## Architecture
+
+<Diagram
+  alt="A vertical pipeline. Telemetry from SIEM, IDS, EDR and threat intelligence is normalized into one event shape. Entities such as accounts, hosts and mailboxes are resolved. Signals are correlated by entity inside a time window. Behavior is mapped to MITRE ATT&CK tactics and techniques. An AI-assisted investigation is assembled and handed to an analyst, who reviews it and decides on the response. The response follows from the analyst's decision, not directly from the investigation."
+  caption="Design sketch. Entity resolution as its own step, the ATT&CK position and the analyst step are illustrative."
+>{`
+SIEM / IDS / EDR / threat intel
+        |
+        v
+[ normalize ]   one event shape
+        |
+        v
+[ resolve   ]   account, host, mailbox
+        |
+        v
+[ correlate ]   entity + time window
+        |
+        v
+[ map       ]   ATT&CK tactic, technique
+        |
+        v
+[ assemble  ]   AI-assisted investigation
+        |
+        v
+[ analyst   ]   reviews, decides
+        |
+        v
+response
+`}</Diagram>
+
+Records from different tools are not directly comparable, so the first stage is plain and necessary: put every record in one shape before trying to join anything.
+
+Entity resolution is the stage the rest depends on. One account has different names in different tools. If two names for the same account are never joined, the sequence is never seen.
+
+Correlation groups signals by entity inside a time window. Mapping to MITRE ATT&CK then names the stage each signal represents, so an ordered run of tactics reads as an attack in progress instead of a pile of events. The last automated stage assembles an investigation: the entity, the ordered signals, and why they were linked. An analyst reviews it before anything is acted on.
+
+## Threat model
+
+This pipeline reads data an attacker can influence, and it produces the picture a SOC acts on. Both facts shape the design. The threat actors, assumptions and controls are in the [SignalFusion Core threat model](/systems/signalfusion-core/#threat-model). The part worth arguing here is the input.
+
+<Callout type="threat">
+
+Fields in a log are written by whoever caused the event, and a hostname can contain instructions. The design is meant to have the investigation step read telemetry as data, not as instruction. That is an aim, not a guarantee, so the analyst review and the signals behind each finding stay in the loop.
+
+</Callout>
+
+## Design
+
+The case study lists the [engineering decisions](/systems/signalfusion-core/#decisions). Two carry most of the weight in this note. Correlate by entity and time, because one alert shows one step and the steps only read as a sequence once they are grouped. Keep the signals attached to every finding, so a reviewer can open the evidence behind a conclusion.
+
+Here is the shape of a normalized event.
+
+<CodeBlock lang="json" title="ILLUSTRATIVE / normalized event">
+
+```json
+{
+  "time": "2026-10-04T09:12:31Z",
+  "source": "edr",
+  "entities": [
+    { "type": "host", "id": "host-a" },
+    { "type": "account", "id": "user-1" }
+  ],
+  "action": "process_start",
+  "attack": { "tactic": "execution" },
+  "raw_ref": "edr:evt-0001"
+}
+```
+
+</CodeBlock>
+
+In this illustrative shape, `entities` is a list because one event can touch more than one thing, and the overlap between events is how entities could be linked. `raw_ref` points back to the original record, so a conclusion can be checked against its source.
+
+## Failure modes
+
+Most correlation failures are quiet. A wrong correlation looks like a finding, not like an error, and a missing source looks like a quiet network. The case study lists the [failure modes](/systems/signalfusion-core/#threat-model) one by one. Two are worth the space here.
+
+- **Over-correlation.** A shared service account or jump host links events that have nothing to do with each other, and the pipeline reports a story that never happened.
+- **A fluent summary.** The investigation reads well and is unsupported. A reviewer who does not open the signals has only the prose to trust.
+
+## Lessons
+
+- Correlation is a context problem before it is a scoring problem. The alert is cheap. The rebuilding is the work.
+- A conclusion without its evidence can only be trusted, not reviewed. Attach the signals to every finding.
+- Detection quality has two sides. Designing and optimizing SIEM correlation rules is as much about cutting false positives as about catching more.
+- Help with reading evidence is not help with accountability. The analyst still owns the response.
+- I am not publishing numbers for SignalFusion Core. This note describes a design and the reasoning behind it.

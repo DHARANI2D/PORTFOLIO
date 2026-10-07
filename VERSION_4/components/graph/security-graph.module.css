@@ -1,0 +1,191 @@
+/*
+ * The ambient security graph. Two rules shape everything below.
+ *
+ * 1. Nothing is painted behind text. The graph lives in the two empty margins either side of the
+ *    text column. The column is the site's Container: 1280px wide with 24px (below md) or 40px
+ *    gutters, so the text-free margin on each side is
+ *      max(24px | 40px, (width - 1200px) / 2).
+ *    Nodes, labels and the lines between nodes of the same side sit on a rail down the middle of
+ *    that margin. A line from one side to the other (a chord) is masked to nothing before it
+ *    reaches the column. So text keeps exactly the contrast the page tokens give it, in either
+ *    theme, at any width: the layer is empty wherever there is text.
+ *
+ * 2. State changes cost almost nothing. Idle and lit are two stacked layers and only opacity
+ *    changes between them, over 300ms. No fill, stroke or radius is animated (those cannot run on
+ *    the compositor and force repaints and layout), and nothing loops. Under reduced motion the
+ *    change is instant.
+ *
+ * Labels are text, so they need room: they only show where the margin can hold the longest one
+ * (AUTOMATION is about 74px wide), from 1400px up.
+ *
+ * Colours are the page tokens. The opacities are per theme and are the only numbers to tune.
+ */
+
+.root {
+  position: fixed;
+  inset: 0;
+  z-index: -10;
+  overflow: hidden;
+  pointer-events: none;
+  user-select: none;
+  /* Strict containment keeps the layer's paint and layout away from the page. The inline-size
+     container makes `cqw` below measure this box, which excludes the scrollbar like the page does. */
+  contain: strict;
+  container-type: inline-size;
+
+  --gutter: 24px;
+  --margin: max(var(--gutter), calc((100cqw - 1200px) / 2));
+
+  /* Dark. Idle marks are quiet; lit marks use the accent. */
+  --g-rail: 0.9;
+  --g-rail-lit-1: 0.4;
+  --g-rail-lit-2: 0.6;
+  --g-chord: 0.8;
+  --g-chord-lit-1: 0.4;
+  --g-chord-lit-2: 0.6;
+  --g-dot: 0.5;
+  --g-ring-lit: 0.5;
+  --g-dot-lit: 0.9;
+  --g-label: 0.4;
+  --g-label-lit: 0.8;
+}
+
+@media (min-width: 48rem) {
+  .root {
+    --gutter: 40px;
+  }
+}
+
+:global([data-theme="light"]) .root {
+  --g-rail: 1;
+  --g-rail-lit-1: 0.3;
+  --g-rail-lit-2: 0.5;
+  --g-chord: 1;
+  --g-chord-lit-1: 0.3;
+  --g-chord-lit-2: 0.5;
+  --g-dot: 0.55;
+  --g-ring-lit: 0.45;
+  --g-dot-lit: 0.85;
+  --g-label: 0.55;
+  --g-label-lit: 0.8;
+}
+
+/* Decorative, so it adds nothing in forced-colors mode or on paper. */
+@media (forced-colors: active), print {
+  .root {
+    display: none;
+  }
+}
+
+/* Both layers span from the left rail (x = 0%) to the right rail (x = 100%). */
+.plane,
+.chords {
+  position: absolute;
+  top: 0;
+  left: calc(var(--margin) / 2);
+  width: calc(100% - var(--margin));
+  height: 100%;
+  overflow: visible;
+}
+
+/* Chords start at a rail and are gone 6px before the text column begins. */
+.chords {
+  overflow: hidden;
+  mask-image: linear-gradient(
+    to right,
+    black 0,
+    transparent calc(var(--margin) / 2 - 6px),
+    transparent calc(100% - var(--margin) / 2 + 6px),
+    black 100%
+  );
+}
+
+.line {
+  fill: none;
+  stroke: var(--border-strong);
+  stroke-width: 1;
+}
+.rail {
+  opacity: var(--g-rail);
+}
+.chord {
+  opacity: var(--g-chord);
+}
+
+/* The lit copy of a line sits on top of the idle one. Level 1: one end is lit. Level 2: both are. */
+.lineLit {
+  stroke: var(--accent);
+  opacity: 0;
+  transition: opacity 300ms ease-out;
+}
+.rail.lineLit[data-level="1"] {
+  opacity: var(--g-rail-lit-1);
+}
+.rail.lineLit[data-level="2"] {
+  opacity: var(--g-rail-lit-2);
+}
+.chord.lineLit[data-level="1"] {
+  opacity: var(--g-chord-lit-1);
+}
+.chord.lineLit[data-level="2"] {
+  opacity: var(--g-chord-lit-2);
+}
+
+/* A node is two stacked groups. Idle fades out as lit fades in. */
+.idle {
+  opacity: 1;
+  transition: opacity 300ms ease-out;
+}
+.idle[data-on] {
+  opacity: 0;
+}
+.on {
+  opacity: 0;
+  transition: opacity 300ms ease-out;
+}
+.on[data-on] {
+  opacity: 1;
+}
+
+.dot {
+  fill: var(--muted);
+  opacity: var(--g-dot);
+}
+.dotLit {
+  fill: var(--accent);
+  opacity: var(--g-dot-lit);
+}
+.ring {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1;
+  opacity: var(--g-ring-lit);
+}
+
+.label {
+  display: none;
+  fill: var(--muted);
+  opacity: var(--g-label);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-anchor: middle;
+}
+.labelLit {
+  fill: var(--accent);
+  opacity: var(--g-label-lit);
+}
+
+@media (min-width: 87.5rem) {
+  .label {
+    display: inline;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lineLit,
+  .idle,
+  .on {
+    transition: none;
+  }
+}

@@ -1,0 +1,142 @@
+export const meta = {
+  title: "Why remediation agents need a deterministic evidence gate",
+  summary:
+    "WITNESS is a research prototype of an admission gate. It checks an agent’s proposed remediation against observable state before the action runs.",
+  date: "2026-10-04",
+  tags: ["WITNESS", "AI security", "Remediation"],
+  number: 3,
+};
+
+## Problem
+
+Autonomous agents can propose remediation actions that sound right. That is the failure: a plausible causal claim with no evidence that it is true. “The host is beaconing, so isolate it” is a claim, an action and an unstated step between them. Isolation changes a live system.
+
+Remediation is the hard case for agents. It changes state, so being wrong costs more than being late. Two obvious fixes do not hold.
+
+- **Ask a second model to check the first.** The second model can be wrong in the same way: fluent, confident and unproven. Its verdict is also hard to replay.
+- **Prompt the agent more carefully.** Better prompting changes the wording of a proposal, not whether the proposal is true.
+
+What is needed is a check that does not depend on what the agent says, and that returns the same answer every time for the same inputs.
+
+<Callout type="note">
+
+WITNESS is a research prototype. This is a design note about the approach. It is not a description of a deployed control, and it contains no results.
+
+</Callout>
+
+## Architecture
+
+<Diagram
+  alt="A vertical flow. An agent proposal, made of claims and a requested action, enters a box named WITNESS that holds four checks in order: evidence, corroboration, policy and validation. The evidence and corroboration checks read observable environment state from a separate box. WITNESS returns one of three outcomes: allow, deny or escalate. Execution happens only after allow, and it reads the environment again first."
+  caption="Design sketch. The agent proposes and WITNESS decides. The checks run in the order shown. Execution waits for allow."
+>{`
+agent proposal: claims + action
+              |
+              v
++--------------------+   +-------------+
+| WITNESS            |   | environment |
+|  1 evidence        |<--| observable  |
+|  2 corroboration   |<--| state       |
+|  3 policy          |   +-------------+
+|  4 validation      |          |
++--------------------+          |
+          |                     |
+          v                     |
+ allow | deny | escalate        |
+   |                            |
+   v                            |
+ execution, only after allow <--+
+ (re-validates state first)
+`}</Diagram>
+
+The agent proposes an action and the claims behind it. WITNESS runs four checks in a fixed order, and each one returns pass, fail or insufficient.
+
+- **Evidence.** Is there independently observable evidence for each claim?
+- **Corroboration.** Do separate sources agree with each other and with the claim?
+- **Policy.** Is this action permitted, and how much evidence does it need?
+- **Validation.** A last check that the evidence supports this specific action.
+
+The outcome follows from the results. A single fail is a deny. Insufficient evidence with no fail goes to a person. Only a full set of passes is an allow, and execution happens only after allow. The checks read the environment directly. They do not take the agent’s report of it.
+
+## Threat model
+
+The case study holds the full [WITNESS threat model](/systems/witness/#threat-model): assets, trust boundaries, threat actors, assumptions and failure modes. The point to carry from it is where the attack lands.
+
+<Callout type="threat">
+
+An attacker may not need to attack the gate. If they can influence what the agent reads, they can make a harmful remediation look justified. The gate depends on its evidence being out of their reach too.
+
+</Callout>
+
+## Design
+
+The design rests on keeping claims and evidence apart. A proposal arrives as a requested action plus the claims behind it. Each claim has to be specific enough to check, which means naming the observable that would support it.
+
+<CodeBlock lang="json" title="ILLUSTRATIVE / proposal with one claim">
+
+```json
+{
+  "action": "isolate_host",
+  "target": "host-a",
+  "claims": [
+    {
+      "id": "c1",
+      "statement": "host-a is beaconing to 203.0.113.7",
+      "observable": "outbound connections from host-a to 203.0.113.7, last 15 minutes"
+    }
+  ]
+}
+```
+
+</CodeBlock>
+
+The `observable` field is what makes the claim checkable. “host-a is compromised” fails the test, because there is nothing to look up. “Outbound connections from host-a to this address in the last 15 minutes” passes, because the environment can answer it without the agent. (203.0.113.7 is a documentation address.)
+
+The decision itself is a pure function of the four results.
+
+<CodeBlock lang="python" title="ILLUSTRATIVE / the decision as a pure function">
+
+```python
+def decide(proposal, observations, policy):
+    # Pseudocode. No clock, no randomness, no model call.
+    results = [
+        check_evidence(proposal, observations),
+        check_corroboration(proposal, observations),
+        check_policy(proposal, observations, policy),
+        check_validation(proposal, observations),
+    ]  # each one is "pass", "fail" or "insufficient"
+
+    if "fail" in results:
+        return "deny"
+    if "insufficient" in results:
+        return "escalate"  # to a person
+    return "allow"
+```
+
+</CodeBlock>
+
+Three things follow from that shape.
+
+- **Deterministic.** The same inputs and the same policy give the same decision. A decision can be replayed, tested and audited. Store the inputs and the policy version with each decision and every past decision becomes a test case.
+- **Closed by default.** No rule fails the policy check, so the action is denied. Missing evidence is insufficient, so the action escalates. Allow needs every check to pass.
+- **Specific.** Evidence that a problem exists does not justify every action against it. The gate asks whether the evidence supports this action, not whether the diagnosis sounds plausible.
+
+A pure function decides on the state it was shown, and that state can change before the action runs. The design therefore re-validates the environment at execution time (see the [engineering decisions](/systems/witness/#decisions)).
+
+The cost is real. A deterministic gate checks only what has been written down as a check. A wrong check is wrong every time, so the checks need review like any other detection logic.
+
+## Failure modes
+
+The case study lists the [failure modes](/systems/witness/#threat-model) of the design. Three are worth the space here, because they follow from the shape of the function.
+
+- **A check that is deterministically wrong.** It fails the same way every time, which makes the failure reproducible and the error systematic.
+- **A stale allow.** The decision was right when it was made and wrong when the action ran. Re-validating at execution time is meant to catch this, and it adds a read to every action.
+- **Escalation as a queue.** If most proposals come back insufficient, the gate hands a person a backlog instead of a decision. How often that happens depends on how much independent evidence the environment offers, which is the open question below.
+
+## Lessons
+
+- Keeping claims and evidence apart is the cheapest step and the most important one. The rest follows from it.
+- Three outcomes carry more information than two. Escalate sends a possibly correct remediation to a person instead of discarding it.
+- Making the agent right is a separate job. The gate is meant to bound the cost of the agent being wrong.
+- In incident response, containment follows triage. The gate asks an autonomous agent to keep that order.
+- The open question is what counts as independent evidence. The boundary matters as much as the checks. I am not claiming results or production use. See the [research page](/research/witness/) and the [WITNESS case study](/systems/witness/).
