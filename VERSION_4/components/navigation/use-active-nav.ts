@@ -6,8 +6,6 @@ import { primaryNav } from "@/lib/site";
 
 /** Detail pages belong to a section of the home page: /systems/witness/ lights up SYSTEMS. */
 const SECTION_OF_PATH: readonly (readonly [string, string])[] = [
-  ["/systems/", "/#systems"],
-  ["/research/", "/#research"],
   ["/writing/", "/#writing"],
 ];
 

@@ -15,7 +15,6 @@ export function EngineeringActivity({ className }: { className?: string }) {
 
   const rows = [
     { label: "SYSTEMS", value: metrics.systems },
-    { label: "FLAGSHIP", value: metrics.flagship },
     { label: "RESEARCH", value: metrics.research },
     { label: "CERTIFICATIONS VERIFIED", value: metrics.certificationsVerified },
     { label: "EARLIER PROJECTS", value: metrics.earlierProjects },

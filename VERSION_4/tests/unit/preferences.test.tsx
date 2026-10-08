@@ -100,6 +100,28 @@ describe("INIT_SCRIPT", () => {
     expect(html().dataset.theme).toBe("light");
   });
 
+  it("follows the system setting when nothing is stored, and a stored choice wins over it", () => {
+    vi.stubGlobal("matchMedia", (query: string) => ({ matches: query.includes("light") }));
+    runInitScript();
+    expect(html().dataset.theme).toBe("light");
+    localStorage.setItem(THEME_KEY, "dark");
+    runInitScript();
+    expect(html().dataset.theme).toBe("dark");
+    vi.unstubAllGlobals();
+  });
+
+  it("is dark when the system prefers dark, or when the setting cannot be read", () => {
+    vi.stubGlobal("matchMedia", () => ({ matches: false }));
+    runInitScript();
+    expect(html().dataset.theme).toBe("dark");
+    vi.stubGlobal("matchMedia", () => {
+      throw new Error("blocked");
+    });
+    runInitScript();
+    expect(html().dataset.theme).toBe("dark");
+    vi.unstubAllGlobals();
+  });
+
   it("ignores a view preference left in storage by an earlier version of the site", () => {
     // The engineer/recruiter switch is gone. Its stored value must not change the page.
     localStorage.setItem("ds-view", "recruiter");

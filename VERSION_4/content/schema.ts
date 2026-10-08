@@ -19,75 +19,19 @@ export const graphNodeIds = [
 export const GraphNodeId = z.enum(graphNodeIds);
 export type GraphNodeId = z.infer<typeof GraphNodeId>;
 
-/** One node of an architecture diagram. Positioned on a simple integer grid (col,row). */
-export const ArchNode = z.object({
-  id: z.string().regex(/^[a-z0-9-]+$/),
-  label: z.string(),
-  sublabel: z.string().optional(),
-  kind: z.enum(["source", "process", "gate", "output", "actor"]),
-  col: z.number().int().min(0),
-  row: z.number().int().min(0),
-  input: z.string().optional(),
-  process: z.string().optional(),
-  output: z.string().optional(),
-  trustBoundary: z.string().optional(),
-});
-export type ArchNode = z.infer<typeof ArchNode>;
-
-export const ArchDiagram = z.object({
-  nodes: z.array(ArchNode).min(2),
-  edges: z.array(z.tuple([z.string(), z.string()])),
-  /** Named trust boundaries drawn as dashed groups around node ids. */
-  boundaries: z
-    .array(z.object({ id: z.string(), label: z.string(), nodeIds: z.array(z.string()).min(1) }))
-    .default([]),
-  caption: z.string().optional(),
-});
-export type ArchDiagram = z.infer<typeof ArchDiagram>;
-
-export const ThreatModel = z.object({
-  assets: z.array(z.string()),
-  attackSurface: z.array(z.string()),
-  trustBoundaries: z.array(z.string()),
-  threatActors: z.array(z.string()),
-  assumptions: z.array(z.string()),
-  failureModes: z.array(z.string()),
-  controls: z.array(z.string()),
-});
-export type ThreatModel = z.infer<typeof ThreatModel>;
-
+/**
+ * A system is a card: its name, one line, the domains it sits in and, when it is known, a status.
+ * There are no case studies, architecture diagrams or threat models on the site, and nothing in
+ * the schema to hold them: how a system works is not published, so it cannot be copied from here.
+ */
 export const Project = z.object({
   slug: z.string().regex(/^[a-z0-9-]+$/),
   name: z.string(),
-  /** 1 = flagship, 2 = major, 3 = supporting. Drives visual weight. */
-  tier: z.union([z.literal(1), z.literal(2), z.literal(3)]),
   category: z.string(),
-  /** Only set when known (e.g. "Research / Prototype"). Never invent a status. */
+  /** Only set when known (e.g. "In development"). Never invent a status. */
   status: z.string().optional(),
   domain: z.array(z.string()),
-  /** Layer 1 — 3 seconds. One short line. */
   tagline: z.string(),
-  /** Layer 2 — 30 seconds. One or two sentences on why it matters. Not a restatement of the tagline. */
-  summary: z.string(),
-  /**
-   * Meta description for search and social previews: one complete sentence, at most 160
-   * characters (content tests hold it to 155). Written separately from `summary`, which is longer.
-   */
-  metaDescription: z.string().max(160).optional(),
-  /** Layer 3 — 5 minutes. Body paragraphs for the case-study page. */
-  overview: z.array(z.string()).default([]),
-  problem: z.array(z.string()).default([]),
-  /** Short pipeline shown on cards, e.g. ["SIEM / IDS / EDR / Threat Intel", "Correlation engine", ...]. */
-  flow: z.array(z.string()).min(2),
-  stack: z.array(z.string()).default([]),
-  architecture: ArchDiagram.optional(),
-  threatModel: ThreatModel.optional(),
-  decisions: z.array(z.object({ question: z.string(), answer: z.string() })).default([]),
-  security: z.array(z.string()).default([]),
-  /** Only add links that are real. Omit anything unknown. */
-  links: z
-    .object({ github: z.url().optional(), paper: z.url().optional(), demo: z.url().optional() })
-    .default({}),
   graphNodes: z.array(GraphNodeId).default([]),
 });
 export type Project = z.infer<typeof Project>;
@@ -125,22 +69,16 @@ export const Certification = z.object({
 });
 export type Certification = z.infer<typeof Certification>;
 
+/**
+ * A research entry is a name, nothing more. The site shows the title and whether it is a paper or
+ * a direction. No abstract, notes or tagline are stored: research is not published in detail, so
+ * there is nothing for the site (or its assistant) to show, and nothing to copy from it.
+ */
 export const ResearchItem = z.object({
   slug: z.string().regex(/^[a-z0-9-]+$/),
   title: z.string(),
-  tagline: z.string(),
   /** A written-up paper, or a research direction that has no paper yet. Drives grouping on the home page. */
   kind: z.enum(["paper", "direction"]).default("paper"),
-  abstract: z.string(),
-  /**
-   * Meta description for search and social previews: one complete sentence, at most 160
-   * characters (content tests hold it to 155). The abstract is usually too long to cut cleanly.
-   */
-  metaDescription: z.string().max(160).optional(),
-  notes: z.array(z.string()).default([]),
-  /** Slugs of related /systems entries. */
-  relatedProjects: z.array(z.string()).default([]),
-  links: z.object({ github: z.url().optional(), paper: z.url().optional() }).default({}),
   graphNodes: z.array(GraphNodeId).default([]),
 });
 export type ResearchItem = z.infer<typeof ResearchItem>;

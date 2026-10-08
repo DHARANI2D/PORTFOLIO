@@ -26,7 +26,7 @@ test.describe("terminal", () => {
     await input.fill("status");
     await input.press("Enter");
     await expect(log).toContainText(
-      /projects \d+ \/ flagship \d+ \/ research \d+ \/ certifications \d+ verified/,
+      /projects \d+ \/ research \d+ \/ certifications \d+ verified/,
     );
 
     await input.fill("definitely-not-a-command");
@@ -200,9 +200,9 @@ test.describe("desktop navigation", () => {
   });
 
   test("a detail page marks the section it belongs to", async ({ page }) => {
-    await page.goto("/systems/witness/");
+    await page.goto("/writing/siem-alerts-to-correlated-investigations/");
     const nav = page.getByRole("navigation", { name: "Primary" });
-    await expect(nav.getByRole("link", { name: "SYSTEMS" })).toHaveAttribute(
+    await expect(nav.getByRole("link", { name: "WRITING" })).toHaveAttribute(
       "aria-current",
       "true",
     );

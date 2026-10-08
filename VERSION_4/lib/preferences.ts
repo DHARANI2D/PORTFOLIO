@@ -15,9 +15,10 @@ export const DEFAULT_THEME: Theme = "dark";
  * First it adds the "js" class to <html>: the server HTML ships without it, so CSS can tell a page
  * with scripts (html.js) from one without, and hide controls that only work with JavaScript
  * (`[data-js-only]` in app/globals.css). It runs before the try block so a blocked localStorage
- * cannot stop it. Then it restores the stored theme, or the default.
+ * cannot stop it. Then it restores the stored theme. With nothing stored it follows the visitor's system setting
+ * (prefers-color-scheme), and falls back to dark where that cannot be read.
  */
-export const INIT_SCRIPT = `(function(){var d=document.documentElement;d.classList.add("js");try{var t=localStorage.getItem("${THEME_KEY}");d.dataset.theme=t==="light"?"light":"dark"}catch(e){d.dataset.theme="dark"}})();`;
+export const INIT_SCRIPT = `(function(){var d=document.documentElement;d.classList.add("js");try{var t=localStorage.getItem("${THEME_KEY}");var l=!!window.matchMedia&&matchMedia("(prefers-color-scheme: light)").matches;d.dataset.theme=t==="light"||(t!=="dark"&&l)?"light":"dark"}catch(e){d.dataset.theme="dark"}})();`;
 
 export function readTheme(): Theme {
   if (typeof document === "undefined") return DEFAULT_THEME;

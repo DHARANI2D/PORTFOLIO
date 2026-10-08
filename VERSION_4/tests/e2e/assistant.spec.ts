@@ -36,8 +36,8 @@ test.describe("the hero terminal", () => {
     await terminal.getByRole("button", { name: "Tell me about HELIOS", exact: true }).click();
     const log = terminal.getByRole("log");
     await expect(log).toContainText("SYSTEM / HELIOS");
-    await expect(log).toContainText("Autonomous Security Investigation Platform");
-    await expect(log).toContainText('Type "open helios"');
+    await expect(log).toContainText("Autonomous security investigation, evidence first.");
+    await expect(log).toContainText("Status: In development");
   });
 
   test("a typed question finds a fact in the content", async ({ page }) => {
@@ -63,17 +63,17 @@ test.describe("the hero terminal", () => {
     );
   });
 
-  test("commands still run, and a command that navigates moves the page", async ({ page }) => {
+  test("commands still run, and a command that opens a section scrolls to it", async ({ page }) => {
     await page.goto("/");
     await waitForHydration(page);
     const terminal = hero(page);
     const input = terminal.getByRole("textbox", { name: "Ask a question or type a command" });
     await input.fill("projects");
     await input.press("Enter");
-    await expect(terminal.getByRole("log")).toContainText("helios");
-    await input.fill("open helios");
+    await expect(terminal.getByRole("log")).toContainText("HELIOS");
+    await input.fill("open contact");
     await input.press("Enter");
-    await expect(page).toHaveURL(/\/systems\/helios\/$/);
+    await expect(page).toHaveURL(/\/#contact$/);
   });
 
   test("asking questions is allowed by the Content-Security-Policy and stays on this origin", async ({
@@ -93,6 +93,41 @@ test.describe("the hero terminal", () => {
     expect(cspViolations).toEqual([]);
     expect(foreign).toEqual([]);
     expect(problems()).toEqual([]);
+  });
+});
+
+test.describe("research is names only", () => {
+  test("the section lists the names, with no links, and the old pages are gone", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    const section = page.locator("#research");
+    for (const name of ["WITNESS", "SecureModelGate", "MAESTRO", "MemForensix", "SilentStorm"]) {
+      await expect(section.getByText(name, { exact: true })).toBeVisible();
+    }
+    await expect(section.getByText("AI DFIR", { exact: true })).toBeVisible();
+    // Nothing in the section opens a page: the only link is the one to get in touch.
+    await expect(section.getByRole("link")).toHaveCount(1);
+    await expect(section.getByRole("link")).toHaveAttribute("href", "/#contact");
+    const old = await page.request.get("/research/witness/");
+    expect(old.status()).toBe(404);
+  });
+
+  test("the assistant knows the names and nothing else about the research", async ({ page }) => {
+    await page.goto("/");
+    await waitForHydration(page);
+    const terminal = hero(page);
+    const input = terminal.getByRole("textbox", { name: "Ask a question or type a command" });
+    await input.fill("what is the research about");
+    await input.press("Enter");
+    const log = terminal.getByRole("log");
+    await expect(log).toContainText("RESEARCH / Research");
+    await expect(log).toContainText("The detail of the research is not published");
+    // The knowledge file has one research entry: the names and a line saying the detail is private.
+    const docs = JSON.parse(readOut("knowledge.json")) as { id: string; kind: string; text: string }[];
+    const research = docs.filter((doc) => doc.kind === "research");
+    expect(research.map((doc) => doc.id)).toEqual(["research"]);
+    expect(research[0]?.text.length ?? 0).toBeLessThan(400);
   });
 });
 

@@ -14,22 +14,20 @@ const ctx: TerminalContext = {
     {
       slug: "witness",
       name: "WITNESS",
-      tier: 1,
       tagline: "A gate for agents.",
       graphNodes: ["ai", "agents"],
     },
     {
       slug: "signalfusion-core",
       name: "SignalFusion Core",
-      tier: 1,
       tagline: "Correlation.",
       graphNodes: ["soc", "detection"],
     },
-    { slug: "aegis", name: "AEGIS", tier: 2, tagline: "Control plane.", graphNodes: ["ai"] },
+    { slug: "owl", name: "OWL", tagline: "An operating system.", graphNodes: ["ai"] },
   ],
   research: [
-    { slug: "witness", title: "WITNESS", tagline: "Evidence first.", graphNodes: ["ai"] },
-    { slug: "ai-dfir", title: "AI DFIR", tagline: "Agentic IR.", graphNodes: ["dfir", "ai"] },
+    { slug: "witness", title: "WITNESS", kind: "paper", graphNodes: ["ai"] },
+    { slug: "ai-dfir", title: "AI DFIR", kind: "direction", graphNodes: ["dfir", "ai"] },
   ],
   experience: [
     {
@@ -59,7 +57,6 @@ const ctx: TerminalContext = {
   ],
   metrics: {
     systems: 11,
-    flagship: 22,
     research: 33,
     certificationsVerified: 44,
     earlierProjects: 55,
@@ -133,12 +130,12 @@ describe("runCommand basics", () => {
 });
 
 describe("content commands", () => {
-  it("projects lists slugs, tiers and taglines from the context", () => {
+  it("projects lists names and taglines from the context, and says how they work is not published", () => {
     const out = text(run("projects"));
     expect(out).toContain("SYSTEMS / 3");
-    expect(out).toContain("signalfusion-core");
-    expect(out).toContain("flagship");
-    expect(out).toContain("Control plane.");
+    expect(out).toContain("SignalFusion Core");
+    expect(out).toContain("An operating system.");
+    expect(out).toContain("not published");
   });
 
   it("about, experience, skills, research, certifications, contact and resume print context data", () => {
@@ -147,7 +144,10 @@ describe("content commands", () => {
     expect(text(run("experience"))).toContain("Jan 2020 – present");
     expect(text(run("experience"))).toContain("EDUCATION");
     expect(text(run("skills"))).toContain("AWS, Azure");
-    expect(text(run("research"))).toContain("RESEARCH / 2");
+    const names = text(run("research"));
+    expect(names).toContain("RESEARCH / 2");
+    expect(names).toContain("WITNESS");
+    expect(names).toContain("The detail is not published");
     const certs = text(run("certifications"));
     expect(certs).toContain("Earned One (2025)");
     expect(certs).toContain("PLANNED, NOT EARNED");
@@ -164,7 +164,7 @@ describe("content commands", () => {
 
   it("matrix maps domains to the systems and research that use them", () => {
     const out = text(run("matrix"));
-    expect(out).toMatch(/AI SECURITY\s+WITNESS, AEGIS, AI DFIR/);
+    expect(out).toMatch(/AI SECURITY\s+WITNESS, OWL, AI DFIR/);
     expect(out).toMatch(/CLOUD\s+-/);
   });
 });
@@ -173,7 +173,6 @@ describe("status", () => {
   it("prints the numbers from ctx.metrics and nothing else", () => {
     const out = text(run("status"));
     expect(out).toContain("projects 11");
-    expect(out).toContain("flagship 22");
     expect(out).toContain("research 33");
     expect(out).toContain("certifications 44 verified");
     expect(out).toContain("earlier work 55");
@@ -215,20 +214,17 @@ describe("theme", () => {
 });
 
 describe("open", () => {
-  it("opens a system by slug, name or partial name", () => {
-    expect(run("open aegis").navigate).toBe("/systems/aegis/");
-    expect(run("open signalfusion-core").navigate).toBe("/systems/signalfusion-core/");
-    expect(run("open signal").navigate).toBe("/systems/signalfusion-core/");
-    expect(run("cd AEGIS").navigate).toBe("/systems/aegis/");
+  it("systems have no pages: a system name opens nothing", () => {
+    for (const name of ["owl", "signalfusion-core", "signal", "witness", "systems/witness"]) {
+      expect(run(`open ${name}`).navigate, name).toBeUndefined();
+    }
+    expect(run("open systems").navigate).toBe("/#systems");
   });
 
-  it("separates systems from research and hints when a name is in both", () => {
-    const both = run("open witness");
-    expect(both.navigate).toBe("/systems/witness/");
-    expect(text(both)).toContain("Also in research: open research witness");
-    expect(run("open research witness").navigate).toBe("/research/witness/");
-    expect(run("open systems/witness").navigate).toBe("/systems/witness/");
-    expect(run("open ai-dfir").navigate).toBe("/research/ai-dfir/");
+  it("research has no pages: research names go nowhere", () => {
+    expect(run("open research witness").navigate).toBeUndefined();
+    expect(run("open ai-dfir").navigate).toBeUndefined();
+    expect(run("open research").navigate).toBe("/#research");
   });
 
   it("opens fixed pages", () => {
@@ -256,7 +252,7 @@ describe("open", () => {
       }
     }
     expect(text(run("open nonexistent-thing"))).toContain('Nothing named "nonexistent-thing"');
-    expect(text(run("open"))).toContain("Usage: open <slug>");
+    expect(text(run("open"))).toContain("Usage: open <section>");
   });
 });
 

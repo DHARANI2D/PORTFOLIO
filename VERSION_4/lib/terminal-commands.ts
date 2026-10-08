@@ -1,3 +1,4 @@
+import { fuzzyScore } from "@/lib/fuzzy";
 import type {
   Certification,
   Experience,
@@ -6,7 +7,6 @@ import type {
   ResearchItem,
   SkillGroup,
 } from "@/content/schema";
-import { fuzzyScore } from "@/lib/fuzzy";
 
 /**
  * Pure command interpreter behind the terminal easter egg. No DOM, no React, no content imports.
@@ -41,7 +41,6 @@ export type TerminalSite = {
 
 export type TerminalMetrics = {
   systems: number;
-  flagship: number;
   research: number;
   certificationsVerified: number;
   earlierProjects: number;
@@ -49,8 +48,8 @@ export type TerminalMetrics = {
 
 /** Plain, serialisable data. The Pick<> shapes let tests build a context by hand. */
 export type TerminalContext = {
-  projects: readonly Pick<Project, "slug" | "name" | "tier" | "tagline" | "graphNodes">[];
-  research: readonly Pick<ResearchItem, "slug" | "title" | "tagline" | "graphNodes">[];
+  projects: readonly Pick<Project, "slug" | "name" | "tagline" | "graphNodes">[];
+  research: readonly Pick<ResearchItem, "slug" | "title" | "kind" | "graphNodes">[];
   experience: readonly Pick<
     Experience,
     "id" | "org" | "role" | "team" | "start" | "end" | "current" | "summary" | "bullets"
@@ -185,16 +184,15 @@ function experience(_args: string[], ctx: TerminalContext): TerminalResult {
   return { lines };
 }
 
-const TIER_LABEL = { 1: "flagship", 2: "major", 3: "supporting" } as const;
 
 function projects(_args: string[], ctx: TerminalContext): TerminalResult {
-  const rows = ctx.projects.map((p) => [p.slug, TIER_LABEL[p.tier], p.tagline]);
+  const rows = ctx.projects.map((p) => [p.name, p.tagline]);
   return {
     lines: [
       `SYSTEMS / ${ctx.projects.length}`,
       ...table(rows),
       "",
-      'Type "open <slug>" to read a case study.',
+      'How each one works is not published. Type "open systems" to see them on the page.',
     ],
   };
 }
@@ -209,13 +207,14 @@ function skills(_args: string[], ctx: TerminalContext): TerminalResult {
 }
 
 function research(_args: string[], ctx: TerminalContext): TerminalResult {
-  const rows = ctx.research.map((r) => [r.slug, `${r.title}. ${r.tagline}`]);
+  // Names only: the detail of the research is not published.
+  const rows = ctx.research.map((r) => [r.title, r.kind]);
   return {
     lines: [
       `RESEARCH / ${ctx.research.length}`,
       ...table(rows),
       "",
-      'Type "open research <slug>" to read one.',
+      'The detail is not published. Type "contact" to get in touch.',
     ],
   };
 }
@@ -278,7 +277,6 @@ function status(_args: string[], ctx: TerminalContext): TerminalResult {
     "SYSTEM / portfolio operational",
     [
       `projects ${metrics.systems}`,
-      `flagship ${metrics.flagship}`,
       `research ${metrics.research}`,
       `certifications ${metrics.certificationsVerified} verified`,
       `earlier work ${metrics.earlierProjects}`,
@@ -306,85 +304,31 @@ function theme(args: string[], ctx: TerminalContext): TerminalResult {
 
 type Target = { href: string; label: string };
 
-const SYSTEM_SCOPES = new Set(["systems", "system", "projects", "project"]);
-
-function resolveTarget(args: string[], ctx: TerminalContext): { target?: Target; hint?: string } {
-  // Accepts "open witness", "open research witness", "open systems/witness", "open /research/witness/".
+/** Opens a section of the page by name. Systems and research have no pages of their own. */
+function resolveTarget(args: string[]): { target?: Target } {
   const words = args
     .join(" ")
     .toLowerCase()
     .split(/[\s/]+/)
     .filter(Boolean);
   const first = words[0];
-  if (first === undefined) return {};
-
-  if (words.length === 1) {
-    const page = PAGES.get(first);
-    if (page !== undefined) return { target: { href: page, label: first } };
-  }
-
-  let scope: "research" | "system" | null = null;
-  if (words.length > 1 && (first === "research" || SYSTEM_SCOPES.has(first))) {
-    scope = first === "research" ? "research" : "system";
-    words.shift();
-  }
-  const slug = words.join("-");
-  const text = words.join(" ");
-
-  const project =
-    scope === "research"
-      ? undefined
-      : (ctx.projects.find((p) => p.slug === slug) ??
-        bestMatch(text, ctx.projects, (p) => [p.slug, p.name]));
-  if (project) {
-    const alsoResearch = scope === null && ctx.research.some((r) => r.slug === project.slug);
-    return {
-      target: { href: `/systems/${project.slug}/`, label: project.name },
-      hint: alsoResearch ? `Also in research: open research ${project.slug}` : undefined,
-    };
-  }
-
-  const item =
-    scope === "system"
-      ? undefined
-      : (ctx.research.find((r) => r.slug === slug) ??
-        bestMatch(text, ctx.research, (r) => [r.slug, r.title]));
-  if (item) return { target: { href: `/research/${item.slug}/`, label: item.title } };
-  return {};
+  if (words.length !== 1 || first === undefined) return {};
+  const page = PAGES.get(first);
+  return page === undefined ? {} : { target: { href: page, label: first } };
 }
 
-/** Best fuzzy hit at word-start quality or better, so "open signal" works but noise does not. */
-function bestMatch<T>(
-  query: string,
-  items: readonly T[],
-  fields: (item: T) => string[],
-): T | undefined {
-  let best: T | undefined;
-  let bestScore = 0;
-  for (const item of items) {
-    const score = Math.max(...fields(item).map((field) => fuzzyScore(query, field)));
-    if (score >= 600 && score > bestScore) {
-      best = item;
-      bestScore = score;
-    }
-  }
-  return best;
-}
-
-function open(args: string[], ctx: TerminalContext): TerminalResult {
+function open(args: string[]): TerminalResult {
   if (args.length === 0) {
-    return out('Usage: open <slug>. Type "projects" or "research" to list slugs.');
+    return out("Usage: open <section>, such as: open about, open systems, open contact.");
   }
-  const { target, hint } = resolveTarget(args, ctx);
+  const { target } = resolveTarget(args);
   if (!target) {
     return out(
       `Nothing named "${echo(args.join(" "))}".`,
-      'Type "projects" or "research" to list slugs.',
+      "Sections: about, work, systems, research, certs, writing, contact, resume.",
     );
   }
-  const lines = [`Opening ${target.label} (${target.href})`];
-  if (hint) lines.push(hint);
-  return { lines, navigate: target.href };
+  return { lines: [`Opening ${target.label} (${target.href})`], navigate: target.href };
 }
 
 function matrix(_args: string[], ctx: TerminalContext): TerminalResult {
@@ -432,7 +376,7 @@ const COMMANDS: readonly CommandDef[] = [
     run: projects,
   },
   { name: "skills", usage: "skills", summary: "tools and domains", run: skills },
-  { name: "research", usage: "research", summary: "research directions", run: research },
+  { name: "research", usage: "research", summary: "research names", run: research },
   {
     name: "certifications",
     usage: "certifications",
@@ -452,8 +396,8 @@ const COMMANDS: readonly CommandDef[] = [
   { name: "theme", usage: "theme [dark|light]", summary: "switch theme", run: theme },
   {
     name: "open",
-    usage: "open <slug>",
-    summary: "go to a system, research item or page",
+    usage: "open <section>",
+    summary: "go to a section",
     aliases: ["cd"],
     run: open,
   },

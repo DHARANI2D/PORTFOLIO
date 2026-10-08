@@ -9,7 +9,6 @@ import {
   getMetrics,
   getProject,
   getProjects,
-  getProjectsByTier,
   getResearch,
   getResearchItem,
   getSkills,
@@ -87,11 +86,8 @@ function allCopy(): Entry[] {
 describe("projects", () => {
   const projects = getProjects();
 
-  it("has content, ordered flagship first", () => {
+  it("has content", () => {
     expect(projects.length).toBeGreaterThan(0);
-    const tiers = projects.map((p) => p.tier);
-    expect(tiers).toEqual([...tiers].sort((a, b) => a - b));
-    expect(getProjectsByTier(1).length).toBeGreaterThanOrEqual(1);
   });
 
   it("has unique slugs and names", () => {
@@ -106,26 +102,26 @@ describe("projects", () => {
     expect(getProject("does-not-exist")).toBeUndefined();
   });
 
-  it.each(projects.map((p) => [p.slug, p] as const))(
-    "%s has a flow of at least two steps",
-    (_slug, p) => {
-      expect(p.flow.length).toBeGreaterThanOrEqual(2);
-      for (const step of p.flow) expect(step.trim()).not.toBe("");
-    },
-  );
+  it("is a card and nothing more: no case-study fields are stored", () => {
+    // How the systems work is not published. If a field is added to the schema, this fails.
+    for (const project of projects) {
+      const keys = Object.keys(project).filter((key) => key !== "status");
+      expect(keys.sort(), project.slug).toEqual(
+        ["category", "domain", "graphNodes", "name", "slug", "tagline"].sort(),
+      );
+    }
+  });
 
-  it("gives every flagship project an architecture and a threat model", () => {
-    for (const project of getProjectsByTier(1)) {
-      expect(project.architecture, `${project.slug} architecture`).toBeDefined();
-      expect(project.threatModel, `${project.slug} threatModel`).toBeDefined();
-      expect(project.threatModel?.assets.length, `${project.slug} assets`).toBeGreaterThan(0);
-      expect(project.threatModel?.controls.length, `${project.slug} controls`).toBeGreaterThan(0);
+  it("does not list the research as systems: WITNESS, SecureModelGate and SilentStorm are names only", () => {
+    const slugs = projects.map((p) => p.slug);
+    for (const research of ["witness", "securemodelgate", "silentstorm"]) {
+      expect(slugs).not.toContain(research);
     }
   });
 
   it("only sets a status the owner has stated", () => {
-    // docs/FACTS.md: WITNESS is a research prototype, and the owner said HELIOS is being built now.
-    const stated: Record<string, string> = { witness: "Research / Prototype", helios: "In development" };
+    // The owner said HELIOS is being built now. No other system has a stated status.
+    const stated: Record<string, string> = { helios: "In development" };
     for (const project of projects.filter((p) => p.status)) {
       expect(project.status, project.slug).toBe(stated[project.slug]);
     }
@@ -140,51 +136,6 @@ describe("projects", () => {
   });
 });
 
-describe("architecture diagrams", () => {
-  const diagrams = getProjects().flatMap((p) =>
-    p.architecture ? [[p.slug, p.architecture] as const] : [],
-  );
-
-  it("exist for at least one project", () => {
-    expect(diagrams.length).toBeGreaterThan(0);
-  });
-
-  it.each(diagrams)(
-    "%s: node ids are unique and edges point at existing nodes",
-    (_slug, diagram) => {
-      const ids = diagram.nodes.map((n) => n.id);
-      expect(new Set(ids).size).toBe(ids.length);
-      const known = new Set(ids);
-      for (const [from, to] of diagram.edges) {
-        expect(known.has(from), `edge source ${from}`).toBe(true);
-        expect(known.has(to), `edge target ${to}`).toBe(true);
-        expect(from).not.toBe(to);
-      }
-    },
-  );
-
-  it.each(diagrams)("%s: boundaries only wrap existing nodes", (_slug, diagram) => {
-    const known = new Set(diagram.nodes.map((n) => n.id));
-    const boundaryIds = diagram.boundaries.map((b) => b.id);
-    expect(new Set(boundaryIds).size).toBe(boundaryIds.length);
-    for (const boundary of diagram.boundaries) {
-      for (const id of boundary.nodeIds)
-        expect(known.has(id), `${boundary.id} -> ${id}`).toBe(true);
-    }
-  });
-
-  it.each(diagrams)(
-    "%s: every node is connected and no two share a grid cell",
-    (_slug, diagram) => {
-      const connected = new Set(diagram.edges.flat());
-      for (const node of diagram.nodes)
-        expect(connected.has(node.id), `${node.id} is isolated`).toBe(true);
-      const cells = diagram.nodes.map((n) => `${n.col},${n.row}`);
-      expect(new Set(cells).size).toBe(cells.length);
-    },
-  );
-});
-
 describe("research", () => {
   const research = getResearch();
 
@@ -194,12 +145,26 @@ describe("research", () => {
     for (const item of research) expect(getResearchItem(item.slug)).toBe(item);
   });
 
-  it("only relates to systems that exist", () => {
-    const slugs = new Set(getProjects().map((p) => p.slug));
+  it("is names only: no abstract, notes or tagline are stored", () => {
+    // The research is not published in detail. If a field is added to the schema, this fails, so
+    // detail cannot reach the site (or its assistant) by accident.
     for (const item of research) {
-      for (const related of item.relatedProjects)
-        expect(slugs.has(related), `${item.slug} -> ${related}`).toBe(true);
+      expect(Object.keys(item).sort(), item.slug).toEqual(["graphNodes", "kind", "slug", "title"]);
     }
+  });
+
+  it("names every paper and direction once, as papers or directions", () => {
+    expect(research.filter((r) => r.kind === "paper").map((r) => r.title)).toEqual([
+      "WITNESS",
+      "SecureModelGate",
+      "MAESTRO",
+      "MemForensix",
+      "SilentStorm",
+    ]);
+    expect(research.filter((r) => r.kind === "direction").map((r) => r.title)).toEqual([
+      "AI DFIR",
+      "Agentic Security",
+    ]);
   });
 });
 
@@ -283,7 +248,6 @@ describe("metrics", () => {
     const projects = getProjects();
     expect(getMetrics()).toEqual({
       systems: projects.length,
-      flagship: projects.filter((p) => p.tier === 1).length,
       research: getResearch().length,
       certificationsVerified: getCertifications().filter((c) => c.status === "verified").length,
       earlierProjects: getEarlierWork().length,
@@ -301,15 +265,6 @@ describe("links", () => {
   const CERT_HOSTS = new Set(["www.credly.com", "learn.microsoft.com", "drive.google.com"]);
 
   const hostOf = (url: string) => new URL(url).hostname;
-
-  it("never links a system or research item to a repository (none are public)", () => {
-    // docs/FACTS.md section C: no repo URLs for WITNESS, SignalFusion, HELIOS,
-    // DESAS or SecureModelGate. A link is added only when the owner supplies one.
-    for (const project of getProjects()) {
-      expect(project.links, project.slug).toEqual({});
-    }
-    for (const item of getResearch()) expect(item.links, item.slug).toEqual({});
-  });
 
   it("limits earlier-work links to the owner's GitHub", () => {
     for (const entry of getEarlierWork()) {
@@ -561,376 +516,10 @@ describe("field notes", () => {
     expect(sheet).toMatch(/not a verified publication date/);
   });
 
-  it("tags a note with the name of every system it links to, exactly as displayed", () => {
-    for (const { file, source, meta } of notes) {
-      for (const match of source.matchAll(/\]\(\/systems\/([a-z0-9-]+)\//g)) {
-        const project = getProject(match[1] ?? "");
-        expect(
-          project,
-          `${file} links to /systems/${match[1]}/, which does not exist`,
-        ).toBeDefined();
-        expect(meta.tags, `${file} should be tagged ${project?.name}`).toContain(project?.name);
-      }
-    }
-  });
-
-  it("links only to case-study sections that exist", () => {
+  it("links to no system or research page: neither has pages", () => {
     for (const { file, source } of notes) {
-      for (const match of source.matchAll(/\]\(\/systems\/([a-z0-9-]+)\/#([a-z0-9-]+)\)/g)) {
-        const project = getProject(match[1] ?? "");
-        const anchor = match[2];
-        const has: Record<string, boolean> = {
-          overview: (project?.overview.length ?? 0) > 0,
-          architecture: project?.architecture !== undefined,
-          "threat-model": project?.threatModel !== undefined,
-          decisions: (project?.decisions.length ?? 0) > 0,
-          security: (project?.security.length ?? 0) > 0,
-        };
-        expect(has[anchor ?? ""], `${file} links to #${anchor} on ${match[1]}`).toBe(true);
-      }
+      expect(source, file).not.toMatch(/\]\(\/(?:systems|research)\//);
     }
-  });
-});
-
-/* ---------------------------------------------------------------------------------------------
- * Summaries and meta descriptions
- * ------------------------------------------------------------------------------------------- */
-
-describe("descriptions", () => {
-  const normalize = (text: string) =>
-    text.toLowerCase().replace(/[.]+$/, "").replace(/\s+/g, " ").trim();
-
-  const described = [
-    ...getProjects().map((p) => ({
-      id: `system ${p.slug}`,
-      text: p.metaDescription,
-      tagline: p.tagline,
-    })),
-    ...getResearch().map((r) => ({
-      id: `research ${r.slug}`,
-      text: r.metaDescription,
-      tagline: r.tagline,
-    })),
-  ];
-
-  it.each(described)(
-    "$id has a complete-sentence meta description of 70 to 155 characters",
-    (d) => {
-      expect(d.text, `${d.id} needs a metaDescription`).toBeDefined();
-      const text = d.text ?? "";
-      expect(text.length).toBeGreaterThanOrEqual(70);
-      expect(text.length).toBeLessThanOrEqual(155);
-      expect(text).toMatch(/^[A-Z0-9]/);
-      expect(text).toMatch(/\.$/);
-      expect(text, "cut off with an ellipsis").not.toMatch(/…|\.\.\./);
-      expect(normalize(text)).not.toBe(normalize(d.tagline));
-    },
-  );
-
-  it("the check catches a cut-off description", () => {
-    const cutOff =
-      "A research direction on how to let agents act on security problems without trusting…";
-    expect(/…|\.\.\./.test(cutOff)).toBe(true);
-    expect(cutOff.length).toBeLessThan(155);
-  });
-
-  it("gives every system a 30-second summary that is not its tagline or its meta description", () => {
-    for (const project of getProjects()) {
-      expect(normalize(project.summary), `${project.slug} summary equals tagline`).not.toBe(
-        normalize(project.tagline),
-      );
-      expect(
-        normalize(project.summary),
-        `${project.slug} summary equals meta description`,
-      ).not.toBe(normalize(project.metaDescription ?? ""));
-      expect(project.summary, `${project.slug} summary is not a sentence`).toMatch(/[.]$/);
-    }
-  });
-
-  it("does not repeat the summary or the tagline inside the overview of a thin page", () => {
-    // Thin pages (no architecture) have one overview paragraph that adds something the other layers lack.
-    const thin = getProjects().filter((p) => p.architecture === undefined);
-    expect(thin.length, "no thin page to check").toBeGreaterThan(0);
-    for (const project of thin) {
-      expect(project.overview, `${project.slug} overview is one paragraph`).toHaveLength(1);
-      const paragraph = normalize(project.overview[0] ?? "");
-      expect(paragraph.length, `${project.slug} overview is empty`).toBeGreaterThan(40);
-      expect(paragraph, `${project.slug} overview repeats the tagline`).not.toContain(
-        normalize(project.tagline),
-      );
-      expect(paragraph, `${project.slug} overview repeats the summary`).not.toContain(
-        normalize(project.summary),
-      );
-    }
-  });
-
-  it("no page apologises for being short", () => {
-    const hits = allCopy().filter((entry) =>
-      /intentionally short|this page is (?:short|brief|intentionally)|no implementation detail is published/i.test(
-        entry.value,
-      ),
-    );
-    expect(hits.map((entry) => entry.path)).toEqual([]);
-  });
-});
-
-/* ---------------------------------------------------------------------------------------------
- * Diagrams: no edge around the human, coherent node text
- * ------------------------------------------------------------------------------------------- */
-
-type Edges = readonly (readonly [string, string])[];
-
-/** Node ids reachable from `from` without passing through `avoid`. */
-function reachableAvoiding(edges: Edges, from: string, avoid: string): Set<string> {
-  const seen = new Set<string>([from]);
-  const queue = [from];
-  while (queue.length > 0) {
-    const current = queue.shift() as string;
-    for (const [a, b] of edges) {
-      if (a === current && b !== avoid && !seen.has(b)) {
-        seen.add(b);
-        queue.push(b);
-      }
-    }
-  }
-  return seen;
-}
-
-describe("SignalFusion Core: human judgment is not bypassed", () => {
-  const project = getProject("signalfusion-core");
-  const diagram = project?.architecture;
-
-  it("has no route from AI investigation to Response that skips the Analyst", () => {
-    expect(diagram).toBeDefined();
-    const edges = diagram?.edges ?? [];
-    expect(edges).not.toContainEqual(["investigation", "response"]);
-    expect(reachableAvoiding(edges, "investigation", "analyst").has("response")).toBe(false);
-    // The analyst route itself exists.
-    expect(edges).toContainEqual(["investigation", "analyst"]);
-    expect(edges).toContainEqual(["analyst", "response"]);
-  });
-
-  it("the helper does catch a bypass (a test that can fail)", () => {
-    const bypass: Edges = [
-      ["investigation", "analyst"],
-      ["analyst", "response"],
-      ["investigation", "response"],
-    ];
-    expect(reachableAvoiding(bypass, "investigation", "analyst").has("response")).toBe(true);
-    const longer: Edges = [
-      ["investigation", "ticket"],
-      ["ticket", "response"],
-      ["investigation", "analyst"],
-      ["analyst", "response"],
-    ];
-    expect(reachableAvoiding(longer, "investigation", "analyst").has("response")).toBe(true);
-  });
-
-  it("makes the node text, boundaries, caption and card flow agree", () => {
-    const nodes = new Map((diagram?.nodes ?? []).map((n) => [n.id, n]));
-    expect(nodes.get("analyst")?.trustBoundary).toMatch(/human judgment/i);
-    const boundaries = new Map((diagram?.boundaries ?? []).map((b) => [b.id, b]));
-    expect(boundaries.get("oversight")?.label).toMatch(/human judgment/i);
-    expect(boundaries.get("oversight")?.nodeIds).toEqual(["analyst"]);
-    expect(boundaries.get("analysis")?.nodeIds).toContain("investigation");
-    expect(boundaries.get("analysis")?.nodeIds).not.toContain("response");
-    expect(nodes.get("response")?.input).toMatch(/analyst/i);
-    expect(nodes.get("investigation")?.output).toMatch(/analyst/i);
-    expect(diagram?.caption).toMatch(/analyst/i);
-    // The caption must not say a response follows the investigation directly.
-    expect(diagram?.caption).not.toMatch(
-      /investigat\w+ (?:leads|goes|passes) (?:straight )?to (?:a )?response/i,
-    );
-
-    const flow = project?.flow ?? [];
-    const at = (label: string) => flow.indexOf(label);
-    expect(at("AI investigation")).toBeGreaterThanOrEqual(0);
-    expect(at("Analyst review")).toBe(at("AI investigation") + 1);
-    expect(at("Response")).toBe(at("Analyst review") + 1);
-  });
-
-  it("field note 001 draws the same route", () => {
-    const note = writing.find(({ file }) => file.startsWith("siem-alerts"));
-    const diagram = /\{`([\s\S]*?)`\}<\/Diagram>/.exec(note?.source ?? "")?.[1] ?? "";
-    const order = ["normalize", "resolve", "correlate", "map", "assemble", "analyst", "response"];
-    const positions = order.map((word) => diagram.indexOf(word));
-    expect(
-      positions.every((position) => position >= 0),
-      positions.join(","),
-    ).toBe(true);
-    expect(positions).toEqual([...positions].sort((a, b) => a - b));
-    expect(diagram).not.toMatch(/analyst decides\s*-->/);
-  });
-});
-
-describe("flagship diagrams: node text is coherent", () => {
-  const diagrams = getProjectsByTier(1).flatMap((p) =>
-    p.architecture ? [[p.slug, p.architecture] as const] : [],
-  );
-
-  it.each(diagrams)(
-    "%s: no input without a producer, no output without a consumer",
-    (_slug, diagram) => {
-      const incoming = new Set(diagram.edges.map(([, to]) => to));
-      const outgoing = new Set(diagram.edges.map(([from]) => from));
-      for (const node of diagram.nodes) {
-        if (node.input && !incoming.has(node.id)) {
-          // An entry node's input comes from outside the diagram.
-          expect(["source", "actor"], `${node.id} has an input but nothing feeds it`).toContain(
-            node.kind,
-          );
-        }
-        if (incoming.has(node.id)) {
-          expect(node.input, `${node.id} receives edges but names no input`).toBeTruthy();
-        }
-        if (outgoing.has(node.id)) {
-          expect(node.output, `${node.id} sends edges but names no output`).toBeTruthy();
-        }
-      }
-    },
-  );
-});
-
-/* ---------------------------------------------------------------------------------------------
- * WITNESS: one model on every page
- * ------------------------------------------------------------------------------------------- */
-
-describe("WITNESS is described the same way everywhere", () => {
-  const CHECKS = ["Evidence", "Corroboration", "Policy", "Validation"] as const;
-  const witness = getProject("witness");
-  const diagram = witness?.architecture;
-  const node = (id: string) => diagram?.nodes.find((n) => n.id === id);
-  const note = (prefix: string) => writing.find(({ file }) => file.startsWith(prefix));
-
-  it("draws the checks in the order Evidence, Corroboration, Policy, Validation, Decision", () => {
-    const chain = ["evidence", "corroboration", "policy", "validation", "decision"];
-    chain.slice(0, -1).forEach((id, i) => {
-      expect(diagram?.edges, `${id} -> ${chain[i + 1]}`).toContainEqual([id, chain[i + 1]]);
-    });
-    const placed = chain.map((id) => node(id));
-    expect(placed.map((n) => n?.label)).toEqual([...CHECKS, "Decision"]);
-    const cols = placed.map((n) => n?.col ?? -1);
-    expect(cols).toEqual([...cols].sort((a, b) => a - b));
-    expect(new Set(cols).size).toBe(cols.length);
-    // Nothing skips a check: no edge from before a check to after it, except the environment reads.
-    const index = new Map(chain.map((id, i) => [id, i]));
-    for (const [from, to] of diagram?.edges ?? []) {
-      const a = index.get(from);
-      const b = index.get(to);
-      if (a !== undefined && b !== undefined) expect(b - a, `${from} -> ${to}`).toBe(1);
-    }
-  });
-
-  it("gives every check a pass, fail and insufficient result, and explains the decision rule", () => {
-    for (const id of ["evidence", "corroboration", "policy", "validation"]) {
-      const output = node(id)?.output ?? "";
-      for (const result of ["pass", "fail", "insufficient"])
-        expect(output.toLowerCase(), `${id} output names ${result}`).toContain(result);
-    }
-    const decision = node("decision")?.process ?? "";
-    expect(decision).toMatch(/any fail gives deny/i);
-    expect(decision).toMatch(/all pass gives allow/i);
-    expect(decision).toMatch(/insufficient[^.]*escalate/i);
-    expect(node("escalated")?.process).toMatch(/person/i);
-  });
-
-  it("keeps Evidence and Corroboration distinct", () => {
-    const evidence = node("evidence");
-    const corroboration = node("corroboration");
-    expect(evidence?.process).toMatch(/independently observable evidence/i);
-    expect(corroboration?.process).toMatch(/separate sources agree/i);
-    expect(evidence?.process).not.toBe(corroboration?.process);
-    expect(evidence?.sublabel).not.toBe(corroboration?.sublabel);
-  });
-
-  it("states the order the same way wherever three or more checks are listed", () => {
-    const hits = allCopy()
-      .flatMap(sentencesOf)
-      .flatMap((entry) => {
-        const found = CHECKS.map((name) => ({
-          name,
-          at: new RegExp(`\\b${name}\\b`).exec(entry.value)?.index ?? -1,
-        })).filter((c) => c.at >= 0);
-        if (found.length < 3) return [];
-        const ordered = [...found].sort((a, b) => a.at - b.at).map((c) => c.name);
-        const canonical = CHECKS.filter((name) => ordered.includes(name));
-        return ordered.join() === canonical.join()
-          ? []
-          : [`${entry.path}: ${entry.value.slice(0, 120)}`];
-      });
-    expect(hits).toEqual([]);
-  });
-
-  it("names the stale-evidence case: a failure mode, a control and a labelled decision", () => {
-    const model = witness?.threatModel;
-    expect(model?.failureModes.some((m) => /time of check to time of use/i.test(m))).toBe(true);
-    expect(model?.failureModes.some((m) => /stale/i.test(m))).toBe(true);
-    expect(model?.controls.some((c) => /re-validated/i.test(c))).toBe(true);
-    expect(model?.assumptions.some((a) => /read again/i.test(a))).toBe(true);
-    const decision = witness?.decisions.find((d) => /re-validate/i.test(d.question));
-    expect(decision, "an engineering decision about re-validating at execution time").toBeDefined();
-    expect(decision?.answer).toMatch(/^Design reasoning/);
-    // Execution reads the environment again, so the diagram has the edge that makes that true.
-    expect(diagram?.edges).toContainEqual(["environment", "execution"]);
-    expect(node("execution")?.process).toMatch(/re-validates/i);
-  });
-
-  it("note 003: the prose list and the decide() pseudocode follow the same order and rule", () => {
-    const source = note("deterministic-evidence-gate")?.source ?? "";
-    const prose = mdxProse(source);
-    const labels = CHECKS.map((name) => prose.indexOf(`**${name}.**`));
-    expect(
-      labels.every((at) => at >= 0),
-      labels.join(","),
-    ).toBe(true);
-    expect(labels).toEqual([...labels].sort((a, b) => a - b));
-
-    const code = /```python\n([\s\S]*?)```/.exec(source)?.[1] ?? "";
-    const calls = ["check_evidence", "check_corroboration", "check_policy", "check_validation"].map(
-      (name) => code.indexOf(name),
-    );
-    expect(
-      calls.every((at) => at >= 0),
-      calls.join(","),
-    ).toBe(true);
-    expect(calls).toEqual([...calls].sort((a, b) => a - b));
-    const rule = [`"fail" in results`, `"insufficient" in results`].map((s) => code.indexOf(s));
-    expect(rule[0]).toBeGreaterThanOrEqual(0);
-    expect(rule[1]).toBeGreaterThan(rule[0] ?? 0);
-    const returns = ['return "deny"', 'return "escalate"', 'return "allow"'].map((s) =>
-      code.indexOf(s),
-    );
-    expect(returns.every((at) => at >= 0)).toBe(true);
-    expect(returns).toEqual([...returns].sort((a, b) => a - b));
-    // The old model evaluated Policy first and merged two checks into one call.
-    expect(code).not.toMatch(/def corroborate|rule\.permits/);
-  });
-
-  it("note 002: the decision table maps fail to deny, insufficient to escalate and all pass to allow", () => {
-    const source = note("evidence-boundaries")?.source ?? "";
-    const rows = source
-      .split("\n")
-      .filter((line) => /^\|.*\|\s*(?:deny|escalate[^|]*|allow)\s*\|$/.test(line));
-    expect(rows).toHaveLength(3);
-    const [deny, escalate, allow] = rows;
-    expect(deny).toMatch(/fails/i);
-    expect(deny).toMatch(/\|\s*deny\s*\|$/);
-    expect(escalate).toMatch(/insufficient/i);
-    expect(escalate).toMatch(/\|\s*escalate/);
-    expect(allow).toMatch(/every check passes/i);
-    expect(allow).toMatch(/\|\s*allow\s*\|$/);
-    // Conflicting evidence is a fail, so it must not be listed under escalate.
-    expect(escalate).not.toMatch(/conflict/i);
-  });
-
-  it("research page and case study agree on the three results and on escalating to a person", () => {
-    const research = getResearchItem("witness");
-    const text = (research?.notes ?? []).join(" ");
-    expect(text).toMatch(/pass, fail or come back insufficient/i);
-    expect(text).toMatch(/any fail is a deny/i);
-    expect(text).toMatch(/goes to a person/i);
-    expect(text).toMatch(/Evidence asks whether/);
-    expect(text).toMatch(/Corroboration asks whether separate sources agree/);
   });
 });
 
@@ -1000,51 +589,6 @@ describe("owner review sheet", () => {
       .filter((text): text is string => typeof text === "string" && text !== "")
       .filter((text) => !sheet.includes(text.replaceAll("|", "\\|")))
       .map((text) => `${where}: ${text.slice(0, 90)}`);
-
-  it("quotes every inferred statement of the flagship case studies", () => {
-    const missing = getProjectsByTier(1).flatMap((p) => [
-      ...absent(`${p.slug} summary`, [p.summary, p.metaDescription]),
-      ...absent(`${p.slug} flow`, [p.flow.join(" > ")]),
-      ...absent(
-        `${p.slug} node`,
-        (p.architecture?.nodes ?? []).flatMap((n) => [
-          n.input,
-          n.process,
-          n.output,
-          n.trustBoundary,
-        ]),
-      ),
-      ...absent(`${p.slug} caption`, [p.architecture?.caption]),
-      ...absent(
-        `${p.slug} threat model`,
-        Object.values(p.threatModel ?? {}).flatMap((value) => value as string[]),
-      ),
-      ...absent(
-        `${p.slug} decision`,
-        p.decisions.flatMap((d) => [d.question, d.answer]),
-      ),
-      ...absent(`${p.slug} security`, p.security),
-    ]);
-    expect(missing).toEqual([]);
-  });
-
-  it("quotes the research notes and every meta description", () => {
-    const missing = [
-      ...getResearch().flatMap((r) => [
-        ...absent(`research ${r.slug} notes`, r.notes),
-        ...absent(`research ${r.slug} metaDescription`, [r.metaDescription]),
-      ]),
-      ...getProjects().flatMap((p) => absent(`${p.slug} metaDescription`, [p.metaDescription])),
-    ];
-    expect(missing).toEqual([]);
-  });
-
-  it("quotes the overview of each thin page", () => {
-    const missing = getProjects()
-      .filter((p) => p.architecture === undefined)
-      .flatMap((p) => absent(`${p.slug} overview`, p.overview));
-    expect(missing).toEqual([]);
-  });
 
   it("the check does notice an unlisted statement", () => {
     expect(absent("probe", ["A sentence that is certainly not in the sheet 7f3a9."])).toHaveLength(

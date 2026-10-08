@@ -60,7 +60,7 @@ The outcome follows from the results. A single fail is a deny. Insufficient evid
 
 ## Threat model
 
-The case study holds the full [WITNESS threat model](/systems/witness/#threat-model): assets, trust boundaries, threat actors, assumptions and failure modes. The point to carry from it is where the attack lands.
+The point to carry from the threat model is where the attack lands.
 
 <Callout type="threat">
 
@@ -121,13 +121,13 @@ Three things follow from that shape.
 - **Closed by default.** No rule fails the policy check, so the action is denied. Missing evidence is insufficient, so the action escalates. Allow needs every check to pass.
 - **Specific.** Evidence that a problem exists does not justify every action against it. The gate asks whether the evidence supports this action, not whether the diagnosis sounds plausible.
 
-A pure function decides on the state it was shown, and that state can change before the action runs. The design therefore re-validates the environment at execution time (see the [engineering decisions](/systems/witness/#decisions)).
+A pure function decides on the state it was shown, and that state can change before the action runs. The design therefore re-validates the environment at execution time.
 
 The cost is real. A deterministic gate checks only what has been written down as a check. A wrong check is wrong every time, so the checks need review like any other detection logic.
 
 ## Failure modes
 
-The case study lists the [failure modes](/systems/witness/#threat-model) of the design. Three are worth the space here, because they follow from the shape of the function.
+Three failure modes are worth the space here, because they follow from the shape of the function.
 
 - **A check that is deterministically wrong.** It fails the same way every time, which makes the failure reproducible and the error systematic.
 - **A stale allow.** The decision was right when it was made and wrong when the action ran. Re-validating at execution time is meant to catch this, and it adds a read to every action.
@@ -139,4 +139,4 @@ The case study lists the [failure modes](/systems/witness/#threat-model) of the 
 - Three outcomes carry more information than two. Escalate sends a possibly correct remediation to a person instead of discarding it.
 - Making the agent right is a separate job. The gate is meant to bound the cost of the agent being wrong.
 - In incident response, containment follows triage. The gate asks an autonomous agent to keep that order.
-- The open question is what counts as independent evidence. The boundary matters as much as the checks. I am not claiming results or production use. See the [research page](/research/witness/) and the [WITNESS case study](/systems/witness/).
+- The open question is what counts as independent evidence. The boundary matters as much as the checks. I am not claiming results or production use.

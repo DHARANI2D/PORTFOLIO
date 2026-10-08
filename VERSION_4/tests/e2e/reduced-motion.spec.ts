@@ -116,7 +116,7 @@ test.describe("with reduced motion", () => {
 test.describe("without JavaScript", () => {
   test.use({ javaScriptEnabled: false });
 
-  for (const route of ["/", "/systems/", "/about/"]) {
+  for (const route of ["/", "/privacy/"]) {
     test(`${route} renders its final state from the server HTML`, async ({ page }) => {
       await page.goto(route, { waitUntil: "load" });
       await expect(page.locator("h1")).toBeVisible();

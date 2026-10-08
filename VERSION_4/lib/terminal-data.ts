@@ -22,17 +22,16 @@ import type { TerminalData } from "@/lib/terminal-commands";
  */
 export function buildTerminalData(): TerminalData {
   return {
-    projects: getProjects().map(({ slug, name, tier, tagline, graphNodes }) => ({
+    projects: getProjects().map(({ slug, name, tagline, graphNodes }) => ({
       slug,
       name,
-      tier,
       tagline,
       graphNodes,
     })),
-    research: getResearch().map(({ slug, title, tagline, graphNodes }) => ({
+    research: getResearch().map(({ slug, title, kind, graphNodes }) => ({
       slug,
       title,
-      tagline,
+      kind,
       graphNodes,
     })),
     experience: getExperience().map(

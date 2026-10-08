@@ -11,12 +11,10 @@ test.describe("routes", () => {
     for (const route of ["/", "/resume/", "/privacy/", "/security/"]) {
       expect(routes, route).toContain(route);
     }
-    expect(routes.some((route) => route.startsWith("/systems/") && route !== "/systems/")).toBe(
-      true,
-    );
-    expect(routes.some((route) => route.startsWith("/research/") && route !== "/research/")).toBe(
-      true,
-    );
+    // Systems and research are cards and names: they have no pages.
+    expect(routes.some((route) => route.startsWith("/systems/"))).toBe(false);
+    // Research is published as names only: it has no pages.
+    expect(routes.some((route) => route.startsWith("/research/"))).toBe(false);
     expect(routes.some((route) => route.startsWith("/writing/") && route !== "/writing/")).toBe(
       true,
     );

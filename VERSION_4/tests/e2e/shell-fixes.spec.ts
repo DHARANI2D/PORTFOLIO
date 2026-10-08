@@ -254,10 +254,10 @@ test.describe("forced colours (A11Y-5)", () => {
   });
 
   test("the current section keeps a visible mark in the nav", async ({ page }) => {
-    await page.goto("/systems/witness/");
+    await page.goto("/writing/siem-alerts-to-correlated-investigations/");
     const link = page
       .getByRole("navigation", { name: "Primary" })
-      .getByRole("link", { name: "SYSTEMS" });
+      .getByRole("link", { name: "WRITING" });
     await expect(link).toHaveAttribute("aria-current", "true");
     const mark = link.locator("[aria-hidden]");
     await expect(mark).toHaveCSS("border-bottom-width", "1px");
@@ -384,7 +384,7 @@ test.describe("the open menu at 320px", () => {
 });
 
 test.describe("footer links (UX-08)", () => {
-  for (const route of ["/", "/privacy/", "/systems/witness/"]) {
+  for (const route of ["/", "/privacy/", "/writing/siem-alerts-to-correlated-investigations/"]) {
     test(`${route} links to certifications, security and privacy in the default view`, async ({
       page,
     }) => {

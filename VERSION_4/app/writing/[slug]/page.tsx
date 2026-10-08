@@ -6,12 +6,9 @@ import { Container } from "@/components/ui/container";
 import { graphNodesForTags } from "@/components/writing/note-graph";
 import { NoteHeader } from "@/components/writing/note-header";
 import { NoteNav } from "@/components/writing/note-nav";
-import { NoteRelated, type RelatedLink } from "@/components/writing/note-related";
-import { researchForTags, systemsForTags } from "@/components/writing/related";
 import { NoteToc } from "@/components/writing/note-toc";
 import { NoteTocMobile } from "@/components/writing/note-toc-mobile";
 import { NoteBody } from "@/components/writing/prose";
-import { getProjects, getResearch } from "@/lib/content";
 import { articleJsonLd, buildMetadata } from "@/lib/seo";
 import { getHeadings, getWritingPost, getWritingPosts, getWritingSlugs } from "@/lib/writing";
 
@@ -63,21 +60,6 @@ export default async function WritingPostPage({ params }: PageProps) {
   const newer = position > 0 ? posts[position - 1] : undefined;
   const older = position >= 0 ? posts[position + 1] : undefined;
 
-  // Back-links: the case studies this note is tagged with, then the research it belongs to.
-  const systems = systemsForTags(post.meta.tags, getProjects());
-  const research = researchForTags(post.meta.tags, getResearch(), systems);
-  const related: RelatedLink[] = [
-    ...systems.map((project) => ({
-      href: `/systems/${project.slug}/`,
-      kind: "SYSTEM",
-      title: `${project.name}: ${project.tagline}`,
-    })),
-    ...research.map((item) => ({
-      href: `/research/${item.slug}/`,
-      kind: "RESEARCH",
-      title: `${item.title}: ${item.tagline}`,
-    })),
-  ];
 
   return (
     <>
@@ -113,8 +95,6 @@ export default async function WritingPostPage({ params }: PageProps) {
           </Container>
         </div>
       </article>
-
-      <NoteRelated links={related} />
 
       <NoteNav previous={older} next={newer} />
 

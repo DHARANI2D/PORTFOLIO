@@ -8,7 +8,7 @@ import path from "node:path";
 /**
  * Page fixes: avatar format and frame, contact field contrast, one-line LinkedIn row, the encoded
  * mailto length cap, certifications wording, the /security/ page, two-way links between notes,
- * research and systems, inbound links to /contact/, and research meta descriptions.
+ * research and systems, inbound links to /contact/.
  */
 
 type Rgb = [number, number, number];
@@ -141,25 +141,6 @@ test.describe("/security/ (SEC-10)", () => {
 });
 
 test.describe("internal links (SEO-2, UX-07)", () => {
-  test("research WITNESS lists its field notes; the notes link back to the system and research", async ({
-    page,
-  }) => {
-    await page.goto("/research/witness/");
-    const noteLink = page.locator(
-      "main a[href='/writing/deterministic-evidence-gate-for-remediation/']",
-    );
-    await expect(noteLink).toBeVisible();
-
-    await noteLink.click();
-    await expect(page.locator("main a[href='/systems/witness/']").first()).toBeVisible();
-    await expect(page.locator("main a[href='/research/witness/']").first()).toBeVisible();
-  });
-
-  test("the SignalFusion note links back to its system", async ({ page }) => {
-    await page.goto("/writing/siem-alerts-to-correlated-investigations/");
-    await expect(page.locator("main a[href='/systems/signalfusion-core/']").first()).toBeVisible();
-  });
-
   for (const route of ["/", "/resume/"]) {
     test(`${route} links to the contact section`, async ({ page }) => {
       await page.goto(route);
@@ -168,24 +149,3 @@ test.describe("internal links (SEO-2, UX-07)", () => {
   }
 });
 
-test.describe("research meta descriptions (SEO-3)", () => {
-  for (const slug of [
-    "witness",
-    "securemodelgate",
-    "maestro",
-    "memforensix",
-    "silentstorm",
-    "ai-dfir",
-    "agentic-security",
-  ]) {
-    test(`/research/${slug}/ description is a complete sentence within 160 characters`, async ({
-      page,
-    }) => {
-      await page.goto(`/research/${slug}/`);
-      const description = await page.locator('meta[name="description"]').getAttribute("content");
-      expect(description).toMatch(/[.!?]["”’']?$/);
-      expect(description?.length ?? 999).toBeLessThanOrEqual(160);
-      expect(description).not.toContain("…");
-    });
-  }
-});

@@ -47,24 +47,30 @@ export async function buildKnowledge(): Promise<KnowledgeDoc[]> {
     kind: "project",
     text: [
       sentence(project.tagline),
-      sentence(project.summary),
-      ...project.overview,
       project.status ? sentence(`Status: ${project.status}`) : "",
       sentence(`Domain: ${project.domain.join(", ")}`),
-      project.stack.length > 0 ? sentence(`Stack: ${project.stack.join(", ")}`) : "",
+      "How it works is not published. Details are shared in conversation.",
     ]
       .filter(Boolean)
       .join("\n"),
-    open: `open ${project.slug}`,
+    open: "open systems",
   }));
 
-  const research: KnowledgeDoc[] = getResearch().map((item) => ({
-    id: `research:${item.slug}`,
-    title: item.title,
+  // Research is published as names only, so the assistant knows the names and nothing else.
+  const names = getResearch();
+  const papers = names.filter((item) => item.kind === "paper").map((item) => item.title);
+  const directions = names.filter((item) => item.kind === "direction").map((item) => item.title);
+  const research: KnowledgeDoc = {
+    id: "research",
+    title: "Research",
     kind: "research",
-    text: [sentence(item.tagline), item.abstract].join("\n"),
-    open: `open ${item.slug}`,
-  }));
+    text: [
+      sentence(`Research papers: ${papers.join(", ")}`),
+      sentence(`Research directions: ${directions.join(", ")}`),
+      "The detail of the research is not published. Details are shared in conversation.",
+    ].join("\n"),
+    open: "contact",
+  };
 
   const roles: KnowledgeDoc[] = experience.map((entry) => ({
     id: `experience:${entry.id}`,
@@ -136,5 +142,5 @@ export async function buildKnowledge(): Promise<KnowledgeDoc[]> {
     open: "contact",
   };
 
-  return [about, ...projects, ...research, ...roles, ...skills, certifications, ...writing, contact];
+  return [about, ...projects, research, ...roles, ...skills, certifications, ...writing, contact];
 }

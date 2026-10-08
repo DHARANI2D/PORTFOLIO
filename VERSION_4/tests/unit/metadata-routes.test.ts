@@ -4,7 +4,6 @@ import { describe, expect, it, vi } from "vitest";
 import manifest from "@/app/manifest";
 import robots from "@/app/robots";
 import sitemap from "@/app/sitemap";
-import { getProjects, getResearch } from "@/lib/content";
 import { site } from "@/lib/site";
 
 // getWritingPosts() imports compiled MDX, which Vitest does not compile. The notes are supplied by hand.
@@ -18,7 +17,7 @@ vi.mock("@/lib/writing", () => ({
 const publicDir = path.join(import.meta.dirname, "../../public");
 
 describe("sitemap", () => {
-  it("lists every page: the home page, the standalone pages, systems, research and notes", async () => {
+  it("lists every page: the home page, the standalone pages and notes", async () => {
     const urls = (await sitemap()).map((entry) => entry.url);
     for (const route of [
       "/",
@@ -27,9 +26,9 @@ describe("sitemap", () => {
     ]) {
       expect(urls, route).toContain(`${site.url}${route}`);
     }
-    for (const project of getProjects())
-      expect(urls).toContain(`${site.url}/systems/${project.slug}/`);
-    for (const item of getResearch()) expect(urls).toContain(`${site.url}/research/${item.slug}/`);
+    // Systems and research have no pages, so neither is in the sitemap.
+    expect(urls.filter((url) => url.includes("/systems/"))).toEqual([]);
+    expect(urls.filter((url) => url.includes("/research/"))).toEqual([]);
     expect(urls).toContain(`${site.url}/writing/newer-note/`);
     expect(urls).toContain(`${site.url}/writing/older-note/`);
   });

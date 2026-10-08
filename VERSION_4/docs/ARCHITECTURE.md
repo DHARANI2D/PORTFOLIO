@@ -18,17 +18,9 @@ Consequences that shape the code:
 | URL                      | File                                                                | Data                                                    |
 | ------------------------ | ------------------------------------------------------------------- | ------------------------------------------------------- |
 | `/`                      | `app/page.tsx`                                                      | Sections compose content accessors (see Home below)     |
-| `/about/`                | `app/about/page.tsx`                                                | `getExperience()`, `site`                               |
-| `/experience/`           | `app/experience/page.tsx`                                           | `getExperience()`, `getCertifications()`                |
-| `/systems/`              | `app/systems/page.tsx`                                              | `getProjectsByTier()`, `getEarlierWork()`               |
-| `/systems/[slug]/`       | `app/systems/[slug]/page.tsx`                                       | `getProject(slug)`; params from `getProjects()`         |
-| `/research/`             | `app/research/page.tsx`                                             | `getResearch()`                                         |
-| `/research/[slug]/`      | `app/research/[slug]/page.tsx`                                      | `getResearchItem(slug)`                                 |
-| `/writing/`              | `app/writing/page.tsx`                                              | `getWritingPosts()`                                     |
 | `/writing/[slug]/`       | `app/writing/[slug]/page.tsx`                                       | `getWritingPost(slug)`; params from `getWritingSlugs()` |
-| `/certifications/`       | `app/certifications/page.tsx`                                       | `getCertifications()`                                   |
 | `/resume/`               | `app/resume/page.tsx`                                               | `site`; resume preview, print styles, PDF link          |
-| `/contact/`, `/privacy/` | `app/contact/`, `app/privacy/`                                      | `site`; the privacy page lists every storage key        |
+| `/privacy/`, `/security/` | `app/privacy/`, `app/security/`                                      | `site`; the privacy page lists every storage key        |
 | 404                      | `app/not-found.tsx`                                                 | Exported as `404.html`                                  |
 | Metadata files           | `app/sitemap.ts`, `robots.ts`, `manifest.ts`, `opengraph-image.tsx` | Content accessors, `site`                               |
 
@@ -83,7 +75,6 @@ Server components are the default. `"use client"` appears only on small interact
 | `graph/graph-context`, `graph/security-graph` | Activation store and the ambient SVG that subscribes to it              |
 | `hero/trace-core`, `boot-console`, `reveal`  | Hero animation and scroll reveal, both as enhancements                  |
 | `skills/count-up`                             | Number count-up                                                         |
-| `systems/architecture-diagram`                | Interactive diagram: selection, signal flow                             |
 | `career/scroll-phase`, `writing/note-toc`     | Scroll-linked state                                                     |
 | `contact/contact-form`                        | Builds the `mailto:` link in the browser                                |
 | `resume/print-button`                         | `window.print()`                                                        |
@@ -115,10 +106,6 @@ The fixed background `SecurityGraph` shows seven nodes (`soc`, `detection`, `clo
 - Projects and research items carry `graphNodes`, so the same data drives the graph, the terminal's `matrix` command and the domain tags.
 
 The graph is decorative: `aria-hidden`, `pointer-events-none`, static under reduced motion.
-
-## Diagrams and view transitions
-
-Projects can carry an `architecture` (nodes on an integer grid, edges, named trust boundaries). `ArchitectureDiagram` draws it; `MiniDiagram` draws the short `flow` array on cards. Both wrap the diagram in `<ViewTransition name="diagram-<slug>">`, so navigating from a card to the case study morphs the small diagram into the full one (`experimental.viewTransition` in `next.config.ts`; disabled by the reduced-motion rules in `globals.css`). Every diagram that carries meaning also has a text alternative.
 
 ## Build pipeline
 

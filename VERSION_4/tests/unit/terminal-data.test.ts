@@ -29,7 +29,7 @@ describe("buildTerminalData", () => {
 
   it("copies only the fields the commands read", () => {
     expect(Object.keys(data.projects[0] ?? {}).sort()).toEqual(
-      ["graphNodes", "name", "slug", "tagline", "tier"].sort(),
+      ["graphNodes", "name", "slug", "tagline"].sort(),
     );
     expect(Object.keys(data.certifications[0] ?? {}).sort()).toEqual(
       ["name", "status", "year"].sort(),
@@ -55,7 +55,7 @@ describe("buildTerminalData", () => {
     }
     const first = data.projects[0];
     expect(first).toBeDefined();
-    expect(runCommand(`open ${first?.slug}`, ctx).navigate).toBe(`/systems/${first?.slug}/`);
+    expect(runCommand(`open ${first?.slug}`, ctx).navigate).toBeUndefined();
     expect(runCommand("status", ctx).lines.join("\n")).toContain(
       `projects ${getProjects().length}`,
     );

@@ -21,7 +21,7 @@ Attacks unfold as sequences across identities, endpoints, applications and cloud
 
 Rebuilding that story by hand is slow, repetitive work. Pivot from the alert to the entity, then to every other source that mentions it, then put the results in order. Correlation moves that rebuilding into the pipeline, so the analyst starts from the sequence instead of the fragment.
 
-This note is design reasoning. [SignalFusion Core](/systems/signalfusion-core/) is the system where I work it through.
+This note is design reasoning. SignalFusion Core is the system where I work it through.
 
 ## Architecture
 
@@ -61,7 +61,7 @@ Correlation groups signals by entity inside a time window. Mapping to MITRE ATT&
 
 ## Threat model
 
-This pipeline reads data an attacker can influence, and it produces the picture a SOC acts on. Both facts shape the design. The threat actors, assumptions and controls are in the [SignalFusion Core threat model](/systems/signalfusion-core/#threat-model). The part worth arguing here is the input.
+This pipeline reads data an attacker can influence, and it produces the picture a SOC acts on. Both facts shape the design. The part worth arguing here is the input.
 
 <Callout type="threat">
 
@@ -71,7 +71,7 @@ Fields in a log are written by whoever caused the event, and a hostname can cont
 
 ## Design
 
-The case study lists the [engineering decisions](/systems/signalfusion-core/#decisions). Two carry most of the weight in this note. Correlate by entity and time, because one alert shows one step and the steps only read as a sequence once they are grouped. Keep the signals attached to every finding, so a reviewer can open the evidence behind a conclusion.
+Two design decisions carry most of the weight in this note. Correlate by entity and time, because one alert shows one step and the steps only read as a sequence once they are grouped. Keep the signals attached to every finding, so a reviewer can open the evidence behind a conclusion.
 
 Here is the shape of a normalized event.
 
@@ -97,7 +97,7 @@ In this illustrative shape, `entities` is a list because one event can touch mor
 
 ## Failure modes
 
-Most correlation failures are quiet. A wrong correlation looks like a finding, not like an error, and a missing source looks like a quiet network. The case study lists the [failure modes](/systems/signalfusion-core/#threat-model) one by one. Two are worth the space here.
+Most correlation failures are quiet. A wrong correlation looks like a finding, not like an error, and a missing source looks like a quiet network. Two failure modes are worth the space here.
 
 - **Over-correlation.** A shared service account or jump host links events that have nothing to do with each other, and the pipeline reports a story that never happened.
 - **A fluent summary.** The investigation reads well and is unsupported. A reviewer who does not open the signals has only the prose to trust.

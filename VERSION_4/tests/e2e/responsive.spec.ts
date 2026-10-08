@@ -92,7 +92,7 @@ test.describe("touch targets", () => {
 
   test("interactive controls on key pages are at least 44px tall on a phone", async ({ page }) => {
     const small: string[] = [];
-    for (const route of ["/", "/systems/", "/contact/", "/about/"]) {
+    for (const route of ["/", "/privacy/", "/resume/"]) {
       await page.goto(route, { waitUntil: "load" });
       const found = await page.evaluate(() => {
         const out: string[] = [];

@@ -2,7 +2,7 @@
 
 The portfolio of a security engineer. It is a static site: HTML, CSS and a small amount of JavaScript, no server, no database, no third-party scripts.
 
-The design brief was "a quiet security engineering lab". Minimal at first glance, deep when explored: case studies with architecture diagrams and threat models, and a terminal in the hero that answers questions from the site's own content.
+The design brief was "a quiet security engineering lab". One page, with a terminal in the hero that answers questions from the site's own content. How the systems and the research work is deliberately not published: systems are cards and research is names only.
 
 - Identity, experience, systems, research, field notes, certifications, resume, contact, privacy.
 - Dark by default, light theme.
@@ -93,14 +93,10 @@ Before adding anything, read [`docs/FACTS.md`](docs/FACTS.md). Section C lists w
 
 ### Add a project (system)
 
-1. Create `content/projects/<slug>.ts` exporting an object `satisfies ProjectInput` (see `content/projects/witness.ts` for a full flagship entry and `helios.ts` for a minimal one).
-2. Add it to `projectEntries` in `content/projects/index.ts`.
+1. Create `content/projects/<slug>.ts` exporting an object `satisfies ProjectInput` (see `content/projects/helios.ts`).
+2. Add it to `projectEntries` in `content/projects/index.ts`, and to a theme in `components/home/system-grid.tsx`.
 
-Required fields: `slug`, `name`, `tier` (1 flagship, 2 major, 3 supporting), `category`, `domain`, `tagline`, `summary`, `flow` (at least two steps). Optional: `status` (only if the owner stated one), `overview`, `problem`, `stack`, `architecture`, `threatModel`, `decisions`, `security`, `links`, `graphNodes`.
-
-Flagship projects need an `architecture` and a `threatModel`; the unit tests enforce it. Architecture edges and trust boundaries must reference existing node ids. Only add a `links.github` that is real.
-
-The page at `/systems/<slug>/`, the card on the home page, the sitemap entry, the search index entry and the terminal's `projects` list all appear without further changes.
+Fields: `slug`, `name`, `category`, `domain`, `tagline`, `graphNodes`, and `status` only if the owner stated one. That is all the schema holds: a system is a card, with no page, case study, architecture or threat model, because how it works is not published. A test fails if a field is added.
 
 ### Add a research item
 
@@ -216,7 +212,7 @@ A host that cannot set any response header (GitHub Pages) still enforces the pol
 
 Vitest, Node environment by default, jsdom for tests marked `// @vitest-environment jsdom`. Files are in `tests/unit/`:
 
-- `content.test.ts`: every accessor parses; unique slugs; every project has a flow; flagship projects have an architecture and a threat model; diagram edges and boundaries reference real nodes; only owner-published links; no unsupported claims (percentages, measured quantities, counts of users, uptime, production, awards) and none of the banned hype words.
+- `content.test.ts`: every accessor parses; unique slugs; systems and research hold only a name, a line and domains; only owner-published links; no unsupported claims (percentages, measured quantities, counts of users, uptime, production claims, awards) and no counts with a plus sign; note metadata and dates.
 - `csp.test.ts`: hashing against the CSP specification's test vector, JSON-LD excluded, no `unsafe-inline` anywhere in the policy, style attribute and `<style>` hashing, the `<meta>` tag (position, idempotence, verification), headers file format, security.txt, and `postbuild.mjs` run end to end against fixture exports.
 - `fuzzy.test.ts`, `terminal-commands.test.ts`, `search-index.test.ts`, `preferences.test.tsx`, `seo.test.tsx`, `github.test.ts`, `writing.test.ts`, `metadata-routes.test.ts` (sitemap, robots, manifest), `opengraph-image.test.ts` (renders the PNG), `static-server.test.ts` (the server the e2e suite depends on).
 

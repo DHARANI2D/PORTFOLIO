@@ -1,5 +1,4 @@
 import type { MetadataRoute } from "next";
-import { getProjects, getResearch } from "@/lib/content";
 import { absoluteUrl } from "@/lib/seo";
 import { getWritingPosts } from "@/lib/writing";
 
@@ -21,8 +20,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // No lastModified for pages whose content has no date: a build timestamp would claim every
     // page changed on every deploy, which makes the field useless to crawlers.
     ...STATIC_PATHS.map((path) => ({ url: absoluteUrl(path) })),
-    ...getProjects().map((project) => ({ url: absoluteUrl(`/systems/${project.slug}/`) })),
-    ...getResearch().map((item) => ({ url: absoluteUrl(`/research/${item.slug}/`) })),
     ...posts.map((post) => ({
       url: absoluteUrl(`/writing/${post.slug}/`),
       lastModified: post.meta.date,

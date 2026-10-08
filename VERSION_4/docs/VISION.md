@@ -30,12 +30,10 @@ Home order: hero → 01 SIGNAL → 02 SYSTEMS ("Systems, not demos.") → 03 EXP
 - DO NOT: neon/cyberpunk, matrix rain, shield illustrations, glassmorphism, 3D globe, 30 logos, skill percentage bars, fake GitHub stats, fake uptime/metrics, generic AI buzzwords, equal-weight projects, custom cursor that harms usability.
 - One signature visual: the ambient **security graph** (SOC, DETECTION, CLOUD, AI, DFIR, AGENTS, AUTOMATION) whose nodes activate with the section/page being viewed.
 
-## Systems / case studies
+## Systems
 
-- Cards look like system components (name, tagline, mini flow diagram, stack, "CASE STUDY →"), not image cards.
-- Each system has its own page: hero (status/domain), overview, problem, **threat model** (assets, attack surface, trust boundaries, threat actors, assumptions, failure modes, controls), **interactive architecture diagram** (hover/focus node → INPUT / PROCESS / OUTPUT / TRUST BOUNDARY), **engineering decisions** ("Why …?"), security considerations, links only if real.
-- Three layers of information everywhere: 3 seconds (what), 30 seconds (why it matters), 5 minutes (how it works).
-- Card diagram morphs into the page diagram via View Transitions where supported.
+- Cards (name, one line, domains). No pages, case studies, diagrams or threat models: how the systems work is not published.
+- Research is names only, for the same reason.
 
 ## Other features
 

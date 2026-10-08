@@ -52,17 +52,18 @@ When in doubt, leave it out or write the sentence so it only claims what is list
 - ISC2 Certified in Cybersecurity (CC) — earned, added by the owner. No year known. https://www.credly.com/badges/dcd906b2-db62-4386-a5ce-940699f3a576
 - Planned / next (owner's stated direction, NOT earned): AWS Solutions Architect; security-focused certifications; AI security specialization. Show as "planned"/"in progress", never as completed.
 
-**Systems (owner's own descriptions)**
+**Systems (names and one line only)**
 
-- **WITNESS** — Deterministic AI remediation admission gate. A deterministic admission-control layer for autonomous security and AIOps agents that verifies whether the real environment corroborates an agent's proposed remediation before it executes. Problem: autonomous agents can generate plausible remediation actions without sufficient evidence that their causal claims are true. Approach: separate what an agent _claims_ from what independently observable system state can _prove_, using deterministic evidence checks before allowing high-impact actions. Impact: moves autonomous security from "the AI thinks this is the problem" to "the environment provides sufficient evidence for this specific action." Checks named by owner: Evidence, Corroboration, Policy, Validation (also Risk and Environment State in the earlier plan). Outcome: allow / deny / escalate. Status: Research / Prototype. Domain: AI Security · AIOps · Detection · Agentic security · Zero trust. Flagship (tier 1).
-- **SignalFusion Core** — Threat signal correlation and SOC orchestration with AI-assisted investigation. Normalizes telemetry across endpoint, cloud and identity systems, correlates entities across time, models attacker behavior with MITRE ATT&CK to surface multi-stage and lateral-movement attacks. Problem: SOCs see thousands of independent signals while real attacks unfold as sequences across identities, endpoints, applications and cloud infrastructure. Approach: correlate signals into behavioral relationships rather than isolated events. Impact: better signal-to-noise; disconnected alerts become contextual investigations. Inputs: SIEM / IDS / EDR / threat intel. Pipeline: correlation engine → AI investigation → response. Stack named: Python · Elasticsearch · SIEM · AI. Flagship (tier 1).
-- **AEGIS** — removed from the site at the owner's request (Oct 2026). Must not appear.
-- **ARGUS** — merged into HELIOS (see A4). It no longer exists as a separate system and must not appear on the site.
-- **Voltrix** — removed from the site at the owner's request (Oct 2026). Must not appear.
-- **DESAS** — Dynamic Email Sandbox Analysis System. Tier 3. (No further details known.)
-- **SecureModelGate** — Runtime security enforcement for AI systems: a security enforcement architecture controlling AI model and agent interactions through deterministic policy, trust boundaries and runtime verification; AI security as an enforcement problem, not only a safety discussion. Domain: AI security · policy · trust. Research item.
-- **Sentinel AI** (Node.js, TypeScript, React) — detects phishing, scams and malicious URLs by combining rule-based detection with LLM-driven reasoning; real-time threat monitoring. (Earlier/supporting work.)
-- **AI DFIR** and **Agentic Security** — research directions only (agentic incident-response architecture; autonomous security agents / trustworthy AI remediation). No papers published.
+The design of the systems is not published and must not be described on the site, in the repository or in the assistant. Each system is a card: name, one line, domains.
+
+- SignalFusion Core: from disconnected alerts to contextual investigations. Detection, SOC, correlation, MITRE ATT&CK.
+- OWL: a capability-secured, agent-native operating system.
+- HELIOS: autonomous security investigation, evidence first. In development. Absorbs the former ARGUS.
+- DESAS: Dynamic Email Sandbox Analysis System.
+- ML Incident Response: network IDS alerts to automated containment.
+- Removed from the site: AEGIS, AEGIS-AI, AEGIS-DFIR, Voltrix, ARGUS (merged into HELIOS). Must not appear.
+- WITNESS, SecureModelGate, SilentStorm: research. Names only, under Research.
+- Sentinel AI (Node.js, TypeScript, React): detects phishing, scams and malicious URLs by combining rule-based detection with LLM-driven reasoning. Real-time threat monitoring. Listed under earlier work.
 
 **Earlier work** (academic / supporting)
 
@@ -99,33 +100,22 @@ Threat models, "engineering decisions", failure modes and security consideration
 3. Every inferred statement must be listed in `CONTENT_REVIEW.md` (project → statement) so the owner can verify or delete it.
 4. Field-note publication dates are the authoring date (2026-10-04); the owner sets the real date on publication.
 
-## A2. Research papers (owner's own, added Oct 2026)
+## A2. Research (names only)
 
-Source: /Users/dharanidharan/Projects/Parasparam/Papers. The site describes the ideas and designs only.
-It states none of the papers' measured results (percentages, latencies, throughput), because the site's
-copy rules forbid them. Papers marked "HPE Confidential" or tied to named HPE products are NOT on the site.
-
-- **MAESTRO** — Multi-agent, evidence-augmented DFIR. eBPF/kernel telemetry, adaptive memory forensics, a Security Knowledge Graph (log events and memory artifacts), and an LLM multi-agent pipeline that must cite verifiable evidence IDs, with staged hallucination validation. Scope limits stated in the paper: novel techniques need analyst review; kernel-level compromise can blind kernel monitoring.
-- **MemForensix** — Hybrid memory forensics: eBPF behavioural monitoring, risk-triggered selective memory acquisition, deep signature and ML analysis, forensic chain of custody. Behavioural indicators mapped to MITRE ATT&CK process-injection and reflective-loading techniques.
-- **SecureModelGate** — Pre-deployment AI model attestation: static weight analysis plus behavioural fingerprinting against a clean reference, a signed Model Attestation Token enforced by a Kubernetes admission webhook, and a Model Bill of Materials.
-- Not on the site (held back): Confidential AI-ML (TDX/SEV-SNP), ConfHPC, EchoSense, SilentStorm.
+The owner has written research papers and keeps research directions. They are published as **names only**:
+WITNESS, SecureModelGate, MAESTRO, MemForensix, SilentStorm (papers); AI DFIR, Agentic Security (directions).
+Never describe the ideas, designs, methods or results of any research on the site, in the repository or in
+the assistant. The detail is not published, so it cannot be copied. Papers marked "HPE Confidential" (and
+Confidential AI-ML, ConfHPC, EchoSense) are not on the site at all.
 
 ## A3. Writing on DEV (dev.to/dharani2d)
 
 Six articles in the series "AI Security & Modern Cybersecurity", Sep 2026. Titles, dates and links are in content/devto.ts.
 
-## A4. Projects and research from the owner's inventory (Oct 2026)
+## A4. Owner's inventory (Oct 2026)
 
-Source: the owner's pasted project inventory. Described qualitatively; the site states no counts (lines of code, tests, scenarios) or measured results.
-
-- **OWL** — Capability-secured, agent-native operating system. Rust (no_std), x86-64 / UEFI, microkernel; capability-based access control with unforgeable tokens, attenuation and cascading revocation; hash-chained audit log; IPC state-machine fuzzing; PCI / ARP / UDP / DNS / TCP networking; validated in QEMU.
-- **SecureModelGate** (project) — Pre-deployment backdoor attestation for ML models: static weight analysis (KS-test, layer variance), behavioural fingerprints (KL-divergence), signed JWT Model Attestation Token, Kubernetes admission control. Evaluated on image-classification models with BadNets, blended and noise triggers.
-- **HELIOS** — Autonomous Security Investigation Platform, currently in development. Multi-agent DFIR, GraphRAG, MITRE ATT&CK, adversarial validation, evidence graphs. Absorbs the former ARGUS (autonomous malware analysis: YARA, Volatility, memory forensics, sandbox). The name ASIP is not used on the site.
-- **AEGIS-AI** — removed from the site at the owner's request (Oct 2026). Must not appear.
-- **AEGIS-DFIR** — removed from the site at the owner's request (Oct 2026). Must not appear.
-- **SilentStorm** — Causal early warning for network congestion: time-lagged causal discovery (causal-learn), BiLSTM with attention (PyTorch), precursor signals, early warning; evaluated on an emulated fabric; failure on unseen attack classes is documented.
-- **ML Incident Response** — Snort / Suricata / Zeek into ELK, threat intelligence (AbuseIPDB, MISP, Cortex), scikit-learn classifier, iptables blocking, Slack / email notification.
-- **DESAS** (detail) — Header forensics (SPF / DKIM / DMARC), URL and attachment analysis, sandbox detonation, VirusTotal, MXToolbox, OCR, PDF / DOCX / Excel extraction, polyglot and appended-payload detection, OLE analysis, XLM macro hunting, image heuristics, MITRE ATT&CK mapping, Electron UI.
-- **WITNESS** (detail) — Channel-disjoint corroboration, trusted action lineage, tamper-evident evidence, fail-safe execution, exercised against Microsoft AIOpsLab with local LLMs.
-- **EtherGuard** — Solidity smart-contract vulnerability scanner; the B.E. final-year project. Technique and results NOT supplied: do not describe them.
-- Not on the site: DANUS (repositories deleted); small projects (Birthday Bot, CGPA Calculator, Countdown Timer); Confidential AI-ML paper (marked HPE Confidential).
+The owner supplied a full project and research inventory. Only names, one-line taglines and domains are
+used. Counts, results and designs from it are not on the site. EtherGuard (Solidity smart-contract
+vulnerability scanner, the B.E. final-year project) is listed by name only: its technique and results were
+not supplied, so never describe them. Not on the site: DANUS (repositories deleted); the small projects
+(Birthday Bot, CGPA Calculator, Countdown Timer); the Confidential AI-ML paper (marked HPE Confidential).

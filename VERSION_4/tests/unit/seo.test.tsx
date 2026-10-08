@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { JsonLd } from "@/components/seo/json-ld";
-import { getProjects, getResearch } from "@/lib/content";
+import { getProjects } from "@/lib/content";
 import {
   absoluteUrl,
   articleJsonLd,
@@ -87,10 +87,9 @@ describe("buildMetadata", () => {
     );
   });
 
-  it("gives every system and research page a canonical that ends in a slash", () => {
+  it("gives every system page a canonical that ends in a slash", () => {
     const paths = [
       ...getProjects().map((p) => `/systems/${p.slug}/`),
-      ...getResearch().map((r) => `/research/${r.slug}/`),
     ];
     for (const path of paths) {
       expect(String(buildMetadata({ title: "x", path }).alternates?.canonical)).toBe(

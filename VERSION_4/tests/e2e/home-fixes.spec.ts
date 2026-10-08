@@ -243,45 +243,6 @@ test.describe("ambient animation is one finite pass", () => {
       };
     })`;
 
-  test("flow diagrams run once when scrolled into view, finish within 5 s and then rest", async ({
-    page,
-  }) => {
-    await page.goto("/");
-    await waitForHydration(page);
-
-    // Before the diagrams are on screen nothing flows.
-    const before = (await page.evaluate(MAIN_ANIMATIONS)) as { name: string }[];
-    expect(before.filter((a) => a.name.startsWith("flow-"))).toEqual([]);
-
-    await page.locator('[aria-label="AI security systems"]').scrollIntoViewIfNeeded();
-    await expect
-      .poll(async () => {
-        const now = (await page.evaluate(MAIN_ANIMATIONS)) as { name: string }[];
-        return now.filter((a) => a.name.startsWith("flow-")).length;
-      })
-      .toBeGreaterThan(0);
-
-    const running = (await page.evaluate(MAIN_ANIMATIONS)) as {
-      iterations: string;
-      endTime: number;
-    }[];
-    for (const animation of running) {
-      expect(animation.iterations).not.toBe("Infinity");
-      expect(animation.endTime).toBeLessThanOrEqual(5000);
-    }
-
-    // Everything on the page has come to rest within 5 s plus margin.
-    await expect
-      .poll(
-        async () => {
-          const now = (await page.evaluate(MAIN_ANIMATIONS)) as { state: string }[];
-          return now.filter((a) => a.state === "running" || a.state === "pending").length;
-        },
-        { timeout: 9000 },
-      )
-      .toBe(0);
-  });
-
   test("no infinite animation exists anywhere in the page content", async ({ page }) => {
     await page.goto("/");
     await waitForHydration(page);
@@ -296,35 +257,6 @@ test.describe("ambient animation is one finite pass", () => {
 });
 
 test.describe("system cards", () => {
-  test("say case study only where there is an architecture diagram, overview otherwise", async ({
-    page,
-  }) => {
-    await page.goto("/");
-    const links = page.locator('#systems article h3 a[href^="/systems/"]');
-    const count = await links.count();
-    expect(count).toBeGreaterThanOrEqual(5);
-
-    const targets = await links.evaluateAll((anchors) =>
-      anchors.map((a) => ({
-        href: a.getAttribute("href") ?? "",
-        name: (a.textContent ?? "").trim(),
-        cue: (a.closest("article")?.textContent ?? "").includes("CASE STUDY")
-          ? "case study"
-          : "overview",
-      })),
-    );
-
-    for (const target of targets) {
-      const response = await page.request.get(target.href);
-      const html = await response.text();
-      const hasArchitecture = /architecture diagram/i.test(html);
-      expect(target.cue, `${target.href} cue`).toBe(hasArchitecture ? "case study" : "overview");
-      // The accessible name follows the same wording.
-      expect(target.name.toLowerCase(), `${target.href} name`).toContain(target.cue);
-    }
-    expect(new Set(targets.map((t) => t.cue))).toEqual(new Set(["case study", "overview"]));
-  });
-
 });
 
 test("the home page loads without console errors or failed requests", async ({ page }) => {

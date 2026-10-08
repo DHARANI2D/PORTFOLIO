@@ -69,8 +69,6 @@ export function keyRoutes(): string[] {
       ? preferred
       : all.find((route) => route.startsWith(prefix) && route !== prefix);
   const details = [
-    firstUnder("/systems/", "/systems/witness/"),
-    firstUnder("/research/", "/research/witness/"),
     firstUnder("/writing/"),
   ].filter((route): route is string => route !== undefined);
   return [...STATIC_ROUTES, ...details];
