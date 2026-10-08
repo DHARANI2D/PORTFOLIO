@@ -1,0 +1,122 @@
+# Netlify settings for the whole repository. The site lives in VERSION_4, so the build runs there:
+# `base` is the folder Netlify changes into before it installs and builds, and `publish` is
+# relative to it (VERSION_4/out). The same settings are in VERSION_4/netlify.toml for a site whose
+# base directory is set in the Netlify dashboard instead. Keep the two in step.
+
+# Netlify build settings. The site is a static export: `next build` writes ./out and
+# scripts/postbuild.mjs then adds the security headers next to it.
+
+[build]
+  base = "VERSION_4"
+  command = "pnpm build"
+  publish = "out"
+
+[build.environment]
+  NODE_VERSION = "22"
+  # pnpm comes from the "packageManager" field in package.json; this pins the same version for
+  # Netlify's own detection. Keep the two in sync.
+  PNPM_VERSION = "10.28.0"
+  NEXT_TELEMETRY_DISABLED = "1"
+  # Set NEXT_PUBLIC_SITE_URL in the Netlify UI when the site has its own domain. It feeds the
+  # canonical URLs, sitemap, Open Graph tags and security.txt (see README.md).
+
+# Headers are NOT declared here. The Content-Security-Policy lists the sha256 of every inline
+# script of this particular build, so it cannot be written by hand: scripts/postbuild.mjs generates
+# out/_headers (CSP, HSTS, nosniff, Referrer-Policy, Permissions-Policy, COOP, X-Frame-Options,
+# long-lived cache for /_next/static/*) on every build, and Netlify applies that file.
+# Duplicating them in [[headers]] would risk two different policies on one response. The same
+# policy is also written into every HTML file as a <meta> tag, so it holds even on a response
+# Netlify builds itself (an unknown URL serves 404.html without a per-page header rule).
+
+# Netlify's post-processing (JS/CSS/HTML minify, bundling, image compression) rewrites
+# files after the build. Rewriting an inline script changes its hash and the page's CSP would then
+# block it. The export is already optimised, so post-processing stays off.
+[build.processing]
+  skip_processing = true
+
+# The site is one page: the old list pages now live as sections of the home page. The detail
+# pages (/systems/<name>/, /research/<name>/, /writing/<name>/) are unchanged.
+[[redirects]]
+  from = "/about"
+  to = "/#about"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/about/"
+  to = "/#about"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/experience"
+  to = "/#experience"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/experience/"
+  to = "/#experience"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/systems"
+  to = "/#systems"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/systems/"
+  to = "/#systems"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/research"
+  to = "/#research"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/research/"
+  to = "/#research"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/writing"
+  to = "/#writing"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/writing/"
+  to = "/#writing"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/certifications"
+  to = "/#certifications"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/certifications/"
+  to = "/#certifications"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/contact"
+  to = "/#contact"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/contact/"
+  to = "/#contact"
+  status = 301
+  force = true
+
