@@ -19,7 +19,7 @@ const STEPS = [
   {
     label: "SOC",
     caption:
-      "SOC Analyst at HPE. 100+ security alerts triaged daily, and the full incident lifecycle.",
+      "SOC Analyst at HPE. Security alerts triaged every day, and the full incident lifecycle.",
   },
   {
     label: "DETECTION ENGINEERING",
@@ -34,7 +34,7 @@ const STEPS = [
   {
     label: "AI SECURITY",
     caption:
-      "AI-driven anomaly detection for alert prioritization. AEGIS, a zero-trust control plane for AI agents.",
+      "AI-driven anomaly detection for alert prioritization. SecureModelGate, attestation for ML models before deployment.",
   },
   {
     label: "AUTONOMOUS SECURITY SYSTEMS",
@@ -45,51 +45,57 @@ const STEPS = [
 
 const pad = (n: number) => String(n).padStart(2, "0");
 
+/** How far along the journey each step is, as a fixed set of widths (the site ships no inline styles). */
+const PROGRESS = [
+  "w-[14%]",
+  "w-[28%]",
+  "w-[43%]",
+  "w-[57%]",
+  "w-[71%]",
+  "w-[86%]",
+  "w-full",
+] as const;
+
 /**
- * Vertical, scroll-revealed path. A plain ordered list: every step is readable with no JS, and
- * <ScrollPhase> only exposes a data-phase attribute that the node, connector and text follow. The
- * hidden state is motion-safe only, so reduced motion shows the finished path at once.
- * Not interactive on purpose: there is nothing to operate, so there are no tab stops to get lost in.
+ * The path as a grid of step cards. Each card has a large number, a bold label and its caption, and
+ * a bar along the top that grows with the step, so the eye reads the journey left to right and top
+ * to bottom. The last step, where the path arrives, spans two columns and is tinted. A plain ordered
+ * list: every step is readable with no JS, and <ScrollPhase> only exposes a data-phase attribute
+ * that each card follows. The hidden state is motion-safe only, so reduced motion shows the
+ * finished path at once.
  */
 export function CareerPath() {
   return (
-    <ol aria-label="Career path, in seven steps">
+    <ol aria-label="Career path, in seven steps" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
       {STEPS.map((step, index) => {
         const isLast = index === STEPS.length - 1;
         return (
-          <ScrollPhase key={step.label} as="li" className="relative pb-12 pl-8 last:pb-0">
-            {/* Node. The destination gets the accent ring. */}
-            <span
-              aria-hidden
+          <ScrollPhase key={step.label} as="li" className={cn(isLast && "sm:col-span-2")}>
+            <div
               className={cn(
-                "absolute top-1 left-0 size-3 rounded-full border bg-background",
-                isLast ? "border-accent" : "border-border-strong",
+                "relative flex h-full flex-col overflow-hidden rounded-xl border p-6 pt-8 transition-colors duration-200 hover:border-border-strong motion-reduce:transition-none md:p-7 md:pt-9",
+                isLast ? "border-accent/50 bg-accent-soft" : "bg-surface",
+                "motion-safe:group-data-[phase=hidden]/phase:translate-y-3 motion-safe:group-data-[phase=hidden]/phase:opacity-0 motion-safe:group-data-[phase=shown]/phase:transition-[opacity,translate] motion-safe:group-data-[phase=shown]/phase:duration-700",
               )}
             >
-              <span className="absolute inset-[2px] rounded-full bg-accent motion-safe:group-data-[phase=hidden]/phase:opacity-0 motion-safe:group-data-[phase=shown]/phase:transition-opacity motion-safe:group-data-[phase=shown]/phase:duration-500" />
-            </span>
-
-            {/* Connector down to the next node. It draws as its step enters. */}
-            {isLast ? null : (
-              <span
-                aria-hidden
-                className="absolute top-[18px] -bottom-1 left-[5.5px] w-px bg-border-strong"
-              >
-                <span className="absolute inset-0 origin-top bg-accent/40 motion-safe:group-data-[phase=hidden]/phase:scale-y-0 motion-safe:group-data-[phase=shown]/phase:transition-transform motion-safe:group-data-[phase=shown]/phase:duration-700" />
+              {/* Journey bar: full track, accent fill up to this step. */}
+              <span aria-hidden className="absolute inset-x-0 top-0 h-1 bg-border">
+                <span className={cn("absolute inset-y-0 left-0 bg-accent", PROGRESS[index])} />
               </span>
-            )}
 
-            <div className="motion-safe:group-data-[phase=hidden]/phase:translate-y-2 motion-safe:group-data-[phase=hidden]/phase:opacity-0 motion-safe:group-data-[phase=shown]/phase:transition-[opacity,translate] motion-safe:group-data-[phase=shown]/phase:duration-700">
-              <p className="font-mono text-sm font-medium tracking-[0.12em] text-foreground md:text-base">
-                <span className="text-muted">{pad(index + 1)}</span>
-                <span aria-hidden className="text-muted">
-                  {" "}
-                  /{" "}
-                </span>
-                <span className="sr-only">: </span>
+              <span aria-hidden className="font-mono text-4xl font-semibold text-accent-text">
+                {pad(index + 1)}
+              </span>
+              <p className="mt-5 font-mono text-base font-bold tracking-[0.08em] text-foreground md:text-lg">
+                <span className="sr-only">{pad(index + 1)}: </span>
                 {step.label}
               </p>
-              <p className="mt-2 max-w-xl text-muted">{step.caption}</p>
+              <p className={cn("mt-3 text-base md:text-lg", isLast ? "text-foreground" : "text-muted")}>
+                {step.caption}
+              </p>
+              {isLast ? (
+                <p className="mt-auto pt-6 label-mono text-accent-text">WHERE THE PATH LEADS</p>
+              ) : null}
             </div>
           </ScrollPhase>
         );

@@ -55,12 +55,12 @@ export function ResearchNav({ previous, next }: { previous?: Neighbour; next?: N
 
   return (
     <nav aria-labelledby="more-research-heading" className="border-t">
-      <Container className="py-16 md:py-24">
+      <Container className="py-12 md:py-16">
         <div className="flex items-center justify-between gap-6 border-b pb-6">
           <Label>
             <span id="more-research-heading">MORE RESEARCH</span>
           </Label>
-          <ButtonLink href="/research/" variant="secondary" size="sm">
+          <ButtonLink href="/#research" variant="secondary" size="sm">
             All research
           </ButtonLink>
         </div>

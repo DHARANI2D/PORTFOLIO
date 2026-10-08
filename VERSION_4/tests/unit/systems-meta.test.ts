@@ -25,8 +25,8 @@ describe("pageKind and isBrief", () => {
     const brief = getProjects()
       .filter(isBrief)
       .map((p) => p.slug);
-    expect(brief).toEqual(expect.arrayContaining(["argus", "voltrix", "desas"]));
-    for (const slug of ["witness", "signalfusion-core", "aegis"]) {
+    expect(brief).toEqual(expect.arrayContaining(["helios", "desas"]));
+    for (const slug of ["witness", "signalfusion-core"]) {
       expect(brief).not.toContain(slug);
     }
   });
@@ -103,7 +103,7 @@ describe("briefCopy", () => {
   });
 
   it("never repeats a line across the real thin pages", () => {
-    for (const slug of ["argus", "voltrix", "desas"]) {
+    for (const slug of ["helios", "desas"]) {
       const project = getProject(slug)!;
       const { lead, problem, paragraphs } = briefCopy(project);
       const lines = [project.tagline, lead, ...problem, ...paragraphs].filter(Boolean) as string[];
@@ -190,8 +190,6 @@ describe("relatedFor", () => {
     expect(rel("witness").research[0]?.slug).toBe("witness");
     expect(rel("witness").notes.map((n) => n.number)).toEqual([2, 3]);
     expect(rel("signalfusion-core").notes.map((n) => n.number)).toEqual([1]);
-    expect(rel("aegis").research.map((r) => r.slug)).toContain("securemodelgate");
-    expect(rel("argus").research.map((r) => r.slug)).toEqual(["ai-dfir"]);
-    expect(rel("voltrix").research.map((r) => r.slug)).toEqual(["ai-dfir"]);
+    expect(rel("helios").research.map((r) => r.slug)).toEqual(["maestro", "memforensix", "ai-dfir"]);
   });
 });

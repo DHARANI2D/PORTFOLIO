@@ -124,9 +124,11 @@ describe("projects", () => {
   });
 
   it("only sets a status the owner has stated", () => {
-    // docs/FACTS.md: only WITNESS has a stated status.
-    const statuses = projects.flatMap((p) => (p.status ? [p.status] : []));
-    for (const status of statuses) expect(status).toBe("Research / Prototype");
+    // docs/FACTS.md: WITNESS is a research prototype, and the owner said HELIOS is being built now.
+    const stated: Record<string, string> = { witness: "Research / Prototype", helios: "In development" };
+    for (const project of projects.filter((p) => p.status)) {
+      expect(project.status, project.slug).toBe(stated[project.slug]);
+    }
   });
 
   it("uses only known graph nodes", () => {
@@ -211,11 +213,13 @@ describe("experience", () => {
   });
 
   it("does not describe work the owner has not described", () => {
-    // docs/FACTS.md: Facilio is a role and a year. "No other details are known."
+    // docs/FACTS.md: Facilio is a role, a year and a stack (Redis, Kafka, Apache). What was built
+    // there is not stated, so there are no bullets. The summary says what the company does.
     const facilio = experience.find((e) => e.org === "Facilio");
     expect(facilio).toBeDefined();
     expect(facilio?.bullets).toEqual([]);
-    expect(facilio?.summary).toBeUndefined();
+    expect(facilio?.tags).toEqual(["Redis", "Kafka", "Apache"]);
+    expect(facilio?.summary).toMatch(/Redis, Kafka and Apache/);
     expect(facilio?.end).toBeUndefined();
   });
 
@@ -299,7 +303,7 @@ describe("links", () => {
   const hostOf = (url: string) => new URL(url).hostname;
 
   it("never links a system or research item to a repository (none are public)", () => {
-    // docs/FACTS.md section C: no repo URLs for WITNESS, SignalFusion, AEGIS, ARGUS, Voltrix,
+    // docs/FACTS.md section C: no repo URLs for WITNESS, SignalFusion, HELIOS,
     // DESAS or SecureModelGate. A link is added only when the owner supplies one.
     for (const project of getProjects()) {
       expect(project.links, project.slug).toEqual({});
@@ -400,7 +404,7 @@ describe("copy rules", () => {
     }
     // The owner's own sentences, from docs/FACTS.md, must not trip anything.
     for (const fine of [
-      "Triage 100+ daily security alerts in an enterprise SOC.",
+      "Triage daily security alerts in an enterprise SOC.",
       "SOCs see thousands of independent signals.",
       "Improve detection accuracy and reduce false positives.",
       "It is a direction, not a published result.",
@@ -427,9 +431,9 @@ describe("copy rules", () => {
     }
   });
 
-  it("allows only the one count the owner gave (100+ daily alerts)", () => {
+  it("states no count with a plus sign (such as \"100+\")", () => {
     const counts = allCopy().flatMap((entry) => entry.value.match(/\b\d[\d,]*\+/g) ?? []);
-    expect(counts.every((count) => count === "100+")).toBe(true);
+    expect(counts).toEqual([]);
   });
 
   const HYPE =

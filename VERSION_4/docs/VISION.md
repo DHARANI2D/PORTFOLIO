@@ -9,18 +9,18 @@
 - Themes: DEFEND (SOC, IR, detection, cloud), BUILD (systems), RESEARCH (AI security, autonomous agents).
 - Mental model: Identity → Signal → Systems → Experience → Research → Knowledge → Contact.
 - Career narrative: software engineering → security → SOC → detection engineering → cloud → AI security → autonomous security systems.
-- Flagship hierarchy: WITNESS + SignalFusion Core (+ Helios identity) carry the site. Tier 2: ARGUS, Voltrix, AEGIS. Tier 3: DESAS. Academic work lives under "Earlier work". Do not give every project equal weight.
+- Flagship hierarchy: WITNESS + SignalFusion Core (+ TRACE identity) carry the site. Tier 2: HELIOS. Tier 3: DESAS. Academic work lives under "Earlier work". Do not give every project equal weight.
 
 ## Information architecture
 
-Nav: `DS / HELIOS` · WORK · SYSTEMS · RESEARCH · WRITING · ABOUT · RESUME, plus a tasteful status line ("● AVAILABLE FOR SECURITY ENGINEERING").
+Nav: `DS / TRACE` · WORK · SYSTEMS · RESEARCH · WRITING · ABOUT · RESUME, plus a tasteful status line ("● AVAILABLE FOR SECURITY ENGINEERING").
 Routes: `/`, `/about`, `/systems` (+ one page per system), `/experience`, `/research` (+ items), `/writing` (+ notes), `/certifications`, `/resume`, `/contact`, `/privacy`, `/.well-known/security.txt`.
 Home order: hero → 01 SIGNAL → 02 SYSTEMS ("Systems, not demos.") → 03 EXPERIENCE → 04 RESEARCH → 05 STACK → 06 FIELD NOTES → 07 CONTACT ("Let's build something secure.") → footer ("SYSTEM STATUS ● OPERATIONAL").
 
 ## Hero
 
 - Eyebrow `SECURITY ENGINEER · DETECTION · AI SECURITY`; headline "Building security systems that can see, reason, and respond."; support line; four proof labels; CTAs EXPLORE SYSTEMS / VIEW RESUME.
-- NOT "Hi, I'm X". Small calm "Helios Security Core" visual (DETECT → CORRELATE → INVESTIGATE → RESPOND), optional occasional boot console. Not a hacker terminal.
+- NOT "Hi, I'm X". The terminal, inline in the hero, doubles as an assistant that answers questions from the site's own content.
 
 ## Visual language
 

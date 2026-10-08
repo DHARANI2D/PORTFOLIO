@@ -8,12 +8,12 @@
  */
 :root {
   color-scheme: dark;
-  --background: #090909;
+  --background: #0a0a0c;
   --foreground: #f5f5f5;
   --muted: #929292;
-  --border: #242424;
+  --border: #26262b;
   --border-strong: #343434;
-  --surface: #111111;
+  --surface: #121214;
   --surface-hover: #161616;
   --accent: #8b5cf6;
   --accent-foreground: #ffffff;
@@ -67,6 +67,7 @@
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent-soft: var(--accent-soft);
+  --color-accent-text: color-mix(in srgb, var(--accent) 60%, var(--foreground));
   --font-sans: var(--font-geist-sans), "Geist Fallback", ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
   --breakpoint-xs: 30rem;
@@ -124,6 +125,15 @@
   font-size: 0.6875rem;
   line-height: 1.2;
   letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+/* A subsection heading inside a numbered section: TIMELINE, EDUCATION, EARNED, PAPERS. Bolder and larger than a label. */
+@utility subhead {
+  font-family: var(--font-mono);
+  font-size: 1.125rem;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  line-height: 1.2;
   text-transform: uppercase;
 }
 @utility surface-grid {
@@ -283,4 +293,40 @@ html:not(.js) [data-site-header] {
   .status-ping {
     display: none;
   }
+}
+
+/* Depth: a soft accent glow behind the hero and a hairline accent edge on cards. */
+.hero-glow {
+  background:
+    radial-gradient(60rem 28rem at 15% -10%, rgb(139 92 246 / 0.22), transparent 60%),
+    radial-gradient(40rem 24rem at 90% 10%, rgb(56 189 248 / 0.10), transparent 60%);
+}
+[data-theme="light"] .hero-glow {
+  background:
+    radial-gradient(60rem 28rem at 15% -10%, rgb(109 40 217 / 0.12), transparent 60%),
+    radial-gradient(40rem 24rem at 90% 10%, rgb(14 165 233 / 0.08), transparent 60%);
+}
+
+/*
+ * Structure: page sections sit on a consistent rhythm. Every other section after the header gets a
+ * faint band so blocks read as separate, and cards lift and pick up an accent edge on hover.
+ */
+#main > section:not(.hero-glow):nth-of-type(even) {
+  background: color-mix(in srgb, var(--surface) 55%, transparent);
+}
+[class*="group/card"] {
+  border-radius: 0.75rem;
+  transition:
+    border-color 0.2s,
+    transform 0.2s,
+    box-shadow 0.2s;
+}
+@media (prefers-reduced-motion: no-preference) {
+  [class*="group/card"]:hover {
+    transform: translateY(-2px);
+  }
+}
+[class*="group/card"]:hover {
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
+  box-shadow: 0 10px 30px -12px rgb(139 92 246 / 0.25);
 }

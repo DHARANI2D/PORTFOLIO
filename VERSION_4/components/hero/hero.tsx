@@ -1,8 +1,7 @@
 import "@/components/hero/home-motion.css";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import { BootConsole } from "@/components/hero/boot-console";
-import { HeliosCore } from "@/components/hero/helios-core";
+import { HeroTerminal } from "@/components/hero/hero-terminal";
 import { GraphActivator } from "@/components/graph/graph-context";
 import { ButtonLink } from "@/components/ui/button";
 import { Container } from "@/components/ui/container";
@@ -10,6 +9,7 @@ import { buildIdentity } from "@/components/hero/identity";
 import type { GraphNodeId } from "@/content/schema";
 import { getExperience } from "@/lib/content";
 import { site } from "@/lib/site";
+import { buildTerminalData } from "@/lib/terminal-data";
 
 const SUPPORT_LINE =
   "Security Engineer working across SOC operations, detection engineering, cloud security, and AI-driven security systems.";
@@ -30,12 +30,12 @@ function splitHeadline(headline: string): [string, string] {
 }
 
 /**
- * Home hero. Server component: the headline, support line, identity row, proof strip and CTAs are
- * plain HTML. Client leaves are limited to the Helios panel and the boot console.
+ * Home hero. Server component: the name (the h1), the tagline, support line, identity row, proof strip and CTAs are
+ * plain HTML. The one client leaf is the terminal.
  *
  * Every piece of text on the left is painted on the first frame: the H1 and the support line are
  * the largest text above the fold, and an opacity entrance would delay Largest Contentful Paint
- * until it ended. Only the decorative right column (Helios panel, boot console) rises in, with
+ * until it ended. Only the right column (the terminal) rises in, with
  * CSS only, which is skipped entirely under reduced motion.
  */
 export function Hero() {
@@ -43,14 +43,17 @@ export function Hero() {
   const identity = buildIdentity(getExperience(), site.location);
 
   return (
-    <section aria-labelledby="hero-heading" className="relative pt-12 pb-24 md:pt-24 md:pb-32">
-      <Container className="grid gap-12 lg:grid-cols-12 lg:items-center lg:gap-x-6">
-        <div className="lg:col-span-7">
+    <section aria-labelledby="hero-heading" className="hero-glow relative pt-12 pb-16 md:pt-20 md:pb-24">
+      <Container className="grid gap-12 lg:grid-cols-12 lg:items-center lg:gap-x-10">
+        <div className="min-w-0 lg:col-span-7">
           <p className="label-mono text-muted">{site.eyebrow}</p>
           <h1
             id="hero-heading"
-            className="mt-6 text-4xl display sm:text-5xl md:text-6xl xl:text-7xl"
+            className="mt-5 text-4xl display break-words xs:text-5xl sm:text-6xl xl:text-7xl"
           >
+            {site.name}
+          </h1>
+          <p className="mt-6 max-w-[26ch] text-2xl headline sm:text-3xl xl:text-4xl">
             {lead}
             {tail ? (
               <>
@@ -58,8 +61,8 @@ export function Hero() {
                 <span className="text-muted">{tail}</span>
               </>
             ) : null}
-          </h1>
-          <p className="mt-8 max-w-xl text-lg text-muted md:text-xl">{SUPPORT_LINE}</p>
+          </p>
+          <p className="mt-6 max-w-xl text-base text-muted md:text-lg">{SUPPORT_LINE}</p>
 
           {identity ? (
             // Who, what, where in one quiet row. Same in both views: it is the recruiter's answer.
@@ -68,7 +71,7 @@ export function Hero() {
               <p className="flex flex-wrap items-center gap-x-4 label-mono text-muted">
                 <span>{identity.place}</span>
                 <Link
-                  href="/contact/"
+                  href="/#contact"
                   className="group/link inline-flex min-h-11 items-center gap-2 text-foreground transition-colors duration-200 hover:text-accent motion-reduce:transition-none"
                 >
                   CONTACT
@@ -103,8 +106,7 @@ export function Hero() {
         </div>
 
         <div className="lg:col-span-5">
-          <HeliosCore className="rise-in rise-in-2" />
-          <BootConsole className="rise-in rise-in-4 mt-6" />
+          <HeroTerminal data={buildTerminalData()} className="rise-in rise-in-2" />
         </div>
       </Container>
       <GraphActivator nodes={HERO_NODES} />

@@ -52,6 +52,12 @@ export const certificationEntries: CertificationInput[] = [
     url: "https://drive.google.com/file/d/1_sxQoQdSRJzYMeLQkDwJGYQMjtfoWGEH/view?usp=sharing",
   },
   {
+    name: "ISC2 Certified in Cybersecurity (CC)",
+    issuer: "ISC2",
+    status: "verified",
+    url: "https://www.credly.com/badges/dcd906b2-db62-4386-a5ce-940699f3a576",
+  },
+  {
     name: "AWS Solutions Architect",
     issuer: "Amazon Web Services",
     status: "planned",

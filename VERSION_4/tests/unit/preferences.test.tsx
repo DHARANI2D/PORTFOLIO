@@ -3,19 +3,15 @@ import { act, cleanup, renderHook } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   DEFAULT_THEME,
-  DEFAULT_VIEW,
   INIT_SCRIPT,
   PREFERENCES_EVENT,
   THEME_KEY,
   THEME_SWITCHING_ATTRIBUTE,
-  VIEW_KEY,
   applyTheme,
-  applyView,
   readTheme,
-  readView,
   toggleTheme,
 } from "@/lib/preferences";
-import { useTheme, useView } from "@/lib/use-preferences";
+import { useTheme } from "@/lib/use-preferences";
 
 const html = () => document.documentElement;
 
@@ -30,18 +26,14 @@ afterEach(() => {
 });
 
 describe("defaults", () => {
-  it("are dark and engineer", () => {
+  it("is dark", () => {
     expect(DEFAULT_THEME).toBe("dark");
-    expect(DEFAULT_VIEW).toBe("engineer");
   });
 
   it("are returned when the attributes are missing or unknown", () => {
     expect(readTheme()).toBe("dark");
-    expect(readView()).toBe("engineer");
     html().dataset.theme = "purple";
-    html().dataset.view = "ceo";
     expect(readTheme()).toBe("dark");
-    expect(readView()).toBe("engineer");
   });
 });
 
@@ -53,17 +45,6 @@ describe("apply and read round trip", () => {
     expect(html().dataset.theme).toBe("light");
     expect(readTheme()).toBe("light");
     expect(localStorage.getItem(THEME_KEY)).toBe("light");
-    expect(listener).toHaveBeenCalledTimes(1);
-    window.removeEventListener(PREFERENCES_EVENT, listener);
-  });
-
-  it("applyView sets the attribute, persists it and notifies subscribers", () => {
-    const listener = vi.fn();
-    window.addEventListener(PREFERENCES_EVENT, listener);
-    applyView("recruiter");
-    expect(html().dataset.view).toBe("recruiter");
-    expect(readView()).toBe("recruiter");
-    expect(localStorage.getItem(VIEW_KEY)).toBe("recruiter");
     expect(listener).toHaveBeenCalledTimes(1);
     window.removeEventListener(PREFERENCES_EVENT, listener);
   });
@@ -90,12 +71,9 @@ describe("apply and read round trip", () => {
 
   it("a stored choice survives a fresh page: the init script restores it", () => {
     applyTheme("light");
-    applyView("recruiter");
     html().removeAttribute("data-theme");
-    html().removeAttribute("data-view");
     runInitScript();
     expect(html().dataset.theme).toBe("light");
-    expect(html().dataset.view).toBe("recruiter");
   });
 
   it("still applies the choice when storage refuses the write", () => {
@@ -114,23 +92,25 @@ describe("INIT_SCRIPT", () => {
   it("evaluates to the defaults when nothing is stored", () => {
     runInitScript();
     expect(html().dataset.theme).toBe("dark");
-    expect(html().dataset.view).toBe("engineer");
   });
 
   it("applies stored values", () => {
     localStorage.setItem(THEME_KEY, "light");
-    localStorage.setItem(VIEW_KEY, "recruiter");
     runInitScript();
     expect(html().dataset.theme).toBe("light");
-    expect(html().dataset.view).toBe("recruiter");
+  });
+
+  it("ignores a view preference left in storage by an earlier version of the site", () => {
+    // The engineer/recruiter switch is gone. Its stored value must not change the page.
+    localStorage.setItem("ds-view", "recruiter");
+    runInitScript();
+    expect(html().dataset.view).toBeUndefined();
   });
 
   it("falls back to the defaults for values it does not know", () => {
     localStorage.setItem(THEME_KEY, "<img src=x onerror=alert(1)>");
-    localStorage.setItem(VIEW_KEY, "admin");
     runInitScript();
     expect(html().dataset.theme).toBe("dark");
-    expect(html().dataset.view).toBe("engineer");
   });
 
   it("evaluates to the defaults when reading storage throws", () => {
@@ -140,10 +120,8 @@ describe("INIT_SCRIPT", () => {
       },
     });
     html().dataset.theme = "light";
-    html().dataset.view = "recruiter";
     expect(runInitScript).not.toThrow();
     expect(html().dataset.theme).toBe("dark");
-    expect(html().dataset.view).toBe("engineer");
   });
 
   it("evaluates to the defaults when Storage.getItem throws", () => {
@@ -152,7 +130,6 @@ describe("INIT_SCRIPT", () => {
     });
     expect(runInitScript).not.toThrow();
     expect(html().dataset.theme).toBe("dark");
-    expect(html().dataset.view).toBe("engineer");
   });
 
   it("evaluates to the defaults when even touching window.localStorage throws", () => {
@@ -167,8 +144,7 @@ describe("INIT_SCRIPT", () => {
     try {
       expect(runInitScript).not.toThrow();
       expect(html().dataset.theme).toBe("dark");
-      expect(html().dataset.view).toBe("engineer");
-    } finally {
+      } finally {
       if (original) Object.defineProperty(globalThis, "localStorage", original);
     }
   });
@@ -203,19 +179,14 @@ describe("INIT_SCRIPT", () => {
     expect(INIT_SCRIPT).not.toMatch(/<\/?script/i);
     expect(INIT_SCRIPT).not.toMatch(/\beval\b|\bFunction\b|\bimport\b|\bfetch\b|XMLHttpRequest/);
     expect(INIT_SCRIPT).toContain(THEME_KEY);
-    expect(INIT_SCRIPT).toContain(VIEW_KEY);
   });
 });
 
 describe("hooks", () => {
-  it("useTheme and useView follow apply* calls", () => {
+  it("useTheme follows applyTheme", () => {
     const theme = renderHook(() => useTheme());
-    const view = renderHook(() => useView());
     expect(theme.result.current).toBe("dark");
-    expect(view.result.current).toBe("engineer");
     act(() => applyTheme("light"));
-    act(() => applyView("recruiter"));
     expect(theme.result.current).toBe("light");
-    expect(view.result.current).toBe("recruiter");
   });
 });

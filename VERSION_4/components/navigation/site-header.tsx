@@ -1,47 +1,19 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { Container } from "@/components/ui/container";
 import { AvailabilityStatus, Logo } from "@/components/navigation/logo";
 import { getNavState, MobileMenu } from "@/components/navigation/mobile-menu";
+import { useActiveNav } from "@/components/navigation/use-active-nav";
 import { ThemeToggle } from "@/components/navigation/theme-toggle";
-import { ViewToggle } from "@/components/navigation/view-toggle";
 import { primaryNav } from "@/lib/site";
-import { openCommandPalette, openTerminal } from "@/lib/ui-events";
+import { openTerminal } from "@/lib/ui-events";
 import { cn } from "@/lib/utils";
-
-const subscribeNever = () => () => {};
 
 /** The Resume button is not in primaryNav (it is a button on desktop); the no-JS row lists it as a link. */
 const resumeLink = { href: "/resume/", label: "RESUME" } as const;
-
-/** Mac-style shortcut label. The server snapshot is the Mac label; other platforms swap after mount. */
-function useIsApplePlatform(): boolean {
-  return useSyncExternalStore(
-    subscribeNever,
-    () => /Mac|iPhone|iPad|iPod/i.test(navigator.userAgent),
-    () => true,
-  );
-}
-
-function PaletteButton() {
-  const isApple = useIsApplePlatform();
-  return (
-    <Button
-      variant="secondary"
-      size="sm"
-      onClick={() => openCommandPalette()}
-      // Fixed width so the Mac / non-Mac label swap cannot shift the cluster.
-      className="w-16 px-0"
-    >
-      <span className="sr-only">Open command palette </span>
-      <kbd className="font-mono">{isApple ? "⌘K" : "CTRL K"}</kbd>
-    </Button>
-  );
-}
 
 /** Text button, xl only: below 1280px the right cluster has no room for it (it is in the mobile sheet). */
 function TerminalButton() {
@@ -58,13 +30,13 @@ function TerminalButton() {
 }
 
 /**
- * Sticky site header. One client boundary on purpose: the active link, both toggles, the palette and
- * terminal triggers and the mobile sheet all need client state, and the markup is small.
+ * Sticky site header. One client boundary on purpose: the active link, both toggles, the terminal
+ * trigger and the mobile sheet all need client state, and the markup is small.
  * Server-rendered HTML is complete without JS: the nav links work, the controls that need scripts
  * are marked data-js-only (hidden until the init script adds html.js), and below lg a <noscript>
  * link row stands in for the MENU button.
  *
- * Desktop (lg+): logo | nav | view, theme, palette, resume. At xl the availability line sits under
+ * Desktop (lg+): logo | nav | theme, resume. At xl the availability line sits under
  * the logo, the terminal button appears and "VIEW AS" is spelled out: the 1200px content width has
  * no room for these in the right cluster below that, and the lg width (944px at 1024) is already
  * close to full. At xl the nav items and the gaps are one step tighter so the row still fits at
@@ -78,6 +50,7 @@ function TerminalButton() {
 export function SiteHeader() {
   const pathname = usePathname();
   const onResume = getNavState(pathname, "/resume/") !== null;
+  const active = useActiveNav();
 
   return (
     <header data-site-header className="sticky top-0 z-40 border-b bg-background">
@@ -90,12 +63,12 @@ export function SiteHeader() {
         <nav aria-label="Primary" className="hidden lg:block">
           <ul className="flex items-center">
             {primaryNav.map((item) => {
-              const state = getNavState(pathname, item.href);
+              const state = active === item.href;
               return (
                 <li key={item.href}>
                   <Link
                     href={item.href}
-                    aria-current={state === "page" ? "page" : state ? "true" : undefined}
+                    aria-current={state ? "true" : undefined}
                     className={cn(
                       "relative inline-flex h-9 items-center rounded-md px-2 label-mono transition-colors duration-200 hover:text-foreground motion-reduce:transition-none xl:px-1.5",
                       state ? "text-accent" : "text-muted",
@@ -118,9 +91,7 @@ export function SiteHeader() {
 
         <div className="hidden shrink-0 items-center gap-2 lg:flex">
           <div data-js-only className="contents">
-            <ViewToggle compact />
             <ThemeToggle />
-            <PaletteButton />
             <TerminalButton />
           </div>
           <ButtonLink
@@ -144,12 +115,12 @@ export function SiteHeader() {
           <Container>
             <ul className="flex flex-wrap gap-x-5">
               {[...primaryNav, resumeLink].map((item) => {
-                const state = getNavState(pathname, item.href);
+                const state = item.href === "/resume/" ? onResume : false;
                 return (
                   <li key={item.href}>
                     <Link
                       href={item.href}
-                      aria-current={state === "page" ? "page" : state ? "true" : undefined}
+                      aria-current={state ? "page" : undefined}
                       className={cn(
                         "inline-flex min-h-11 items-center label-mono hover:text-foreground",
                         state ? "text-accent underline underline-offset-4" : "text-muted",

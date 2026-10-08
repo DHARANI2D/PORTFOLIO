@@ -18,18 +18,11 @@ vi.mock("@/lib/writing", () => ({
 const publicDir = path.join(import.meta.dirname, "../../public");
 
 describe("sitemap", () => {
-  it("lists every page: static routes, systems, research and notes", async () => {
+  it("lists every page: the home page, the standalone pages, systems, research and notes", async () => {
     const urls = (await sitemap()).map((entry) => entry.url);
     for (const route of [
       "/",
-      "/about/",
-      "/experience/",
-      "/systems/",
-      "/research/",
-      "/writing/",
-      "/certifications/",
       "/resume/",
-      "/contact/",
       "/privacy/",
     ]) {
       expect(urls, route).toContain(`${site.url}${route}`);

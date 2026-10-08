@@ -64,12 +64,12 @@ function NeighbourLink({
 export function ProjectNav({ previous, next }: ProjectNavProps) {
   return (
     <nav aria-labelledby="more-systems-heading" className="border-t">
-      <Container className="py-16 md:py-24">
+      <Container className="py-12 md:py-16">
         <div className="flex items-center justify-between gap-6 border-b pb-6">
           <Label>
             <span id="more-systems-heading">MORE SYSTEMS</span>
           </Label>
-          <ButtonLink href="/systems/" variant="secondary" size="sm">
+          <ButtonLink href="/#systems" variant="secondary" size="sm">
             All systems
           </ButtonLink>
         </div>

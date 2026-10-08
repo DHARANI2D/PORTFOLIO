@@ -8,6 +8,7 @@ import type { ResearchInput } from "./types";
 export const aiDfir = {
   slug: "ai-dfir",
   title: "AI DFIR",
+  kind: "direction",
   tagline: "Agentic incident-response architecture.",
   abstract:
     "A research direction on agentic architecture for incident response: how autonomous agents could take part in digital forensics and incident response. It is a direction, not a published result.",
@@ -19,7 +20,7 @@ export const aiDfir = {
     "An investigation has to be reconstructable afterwards, so auditability matters as much as speed.",
     "An agent that proposes containment is making a remediation claim. That is the question WITNESS is built around.",
   ],
-  relatedProjects: ["voltrix", "argus", "witness"],
+  relatedProjects: ["helios", "witness"],
   links: {},
   graphNodes: ["dfir", "agents", "ai"],
 } satisfies ResearchInput;

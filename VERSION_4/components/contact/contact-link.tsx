@@ -16,7 +16,7 @@ export function ContactLink({
     <p className={cn("text-sm text-muted", className)}>
       {lead}{" "}
       <Link
-        href="/contact/"
+        href="/#contact"
         className="text-foreground underline decoration-border-strong underline-offset-4 transition-colors duration-200 hover:decoration-foreground motion-reduce:transition-none"
       >
         Get in touch

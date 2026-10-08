@@ -1,6 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
 import { keyRoutes } from "./built-site";
-import { waitForHydration } from "./helpers";
 
 // Runs in the "reduced-motion" project (prefers-reduced-motion: reduce). The site must then be
 // static and fully visible: nothing animating, nothing waiting to fade in.
@@ -112,13 +111,6 @@ test.describe("with reduced motion", () => {
     expect(await fadedContent(page)).toEqual([]);
   });
 
-  test("opening the palette does not animate", async ({ page }) => {
-    await page.goto("/");
-    await waitForHydration(page);
-    await page.evaluate(() => window.dispatchEvent(new Event("ds:open-palette")));
-    await expect(page.getByRole("dialog", { name: "Command palette" })).toBeVisible();
-    await expect.poll(() => runningAnimations(page), { timeout: 5_000 }).toEqual([]);
-  });
 });
 
 test.describe("without JavaScript", () => {

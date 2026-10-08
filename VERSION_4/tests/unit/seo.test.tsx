@@ -21,8 +21,8 @@ describe("site", () => {
     expect(site.url.endsWith("/")).toBe(false);
   });
 
-  it("keeps navigation paths in the trailing-slash form the static export serves", () => {
-    for (const item of primaryNav) expect(item.href).toMatch(/^\/[a-z-]+\/$/);
+  it("points every navigation item at a section of the home page", () => {
+    for (const item of primaryNav) expect(item.href).toMatch(/^\/#[a-z-]+$/);
   });
 });
 

@@ -24,7 +24,7 @@ export function NoteHeader({ post }: { post: WritingPost }) {
       <Container className="pt-6 pb-12 md:pt-8 md:pb-16">
         <nav aria-label="Breadcrumb">
           <Link
-            href="/writing/"
+            href="/#writing"
             className="group/back -ml-2 inline-flex min-h-11 items-center gap-2 px-2 label-mono text-muted transition-colors duration-200 hover:text-foreground motion-reduce:transition-none"
           >
             <ArrowLeft
@@ -42,7 +42,7 @@ export function NoteHeader({ post }: { post: WritingPost }) {
           <h1 className="mt-6 max-w-[22ch] text-3xl headline break-words xs:text-4xl md:text-5xl lg:text-6xl">
             {meta.title}
           </h1>
-          <p className={cn("mt-8 max-w-2xl text-lg text-muted md:text-xl", rise, "delay-100")}>
+          <p className={cn("mt-5 max-w-2xl text-base text-muted md:text-lg", rise, "delay-100")}>
             {meta.summary}
           </p>
         </div>

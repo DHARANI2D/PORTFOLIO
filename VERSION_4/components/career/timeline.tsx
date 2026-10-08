@@ -11,7 +11,7 @@ function TimelineEntry({ entry }: { entry: Experience }) {
   const tags = entry.tags.filter((tag) => !HIDDEN_TAGS.has(tag));
 
   return (
-    <li className="group/entry grid grid-cols-[1rem_1fr] gap-x-4 md:grid-cols-[12rem_1rem_1fr] md:gap-x-8">
+    <li className="group/entry grid grid-cols-[1rem_1fr] gap-x-4 pb-6 last:pb-0 md:grid-cols-[12rem_1rem_1fr] md:gap-x-8">
       {/* Date: beside the rail on desktop, above the body on mobile. */}
       <div className="col-start-2 row-start-1 pb-3 md:col-start-1 md:pt-2 md:pb-0">
         <Label className={entry.current ? "text-foreground" : undefined}>{dateRange(entry)}</Label>
@@ -31,8 +31,8 @@ function TimelineEntry({ entry }: { entry: Experience }) {
         <span className="absolute top-4 bottom-0 left-1/2 w-px -translate-x-1/2 bg-border group-last/entry:hidden md:top-6" />
       </div>
 
-      <div className="col-start-2 row-start-2 pb-12 group-last/entry:pb-0 md:col-start-3 md:row-start-1 md:pb-16 md:group-last/entry:pb-0">
-        <h3 className="text-2xl headline md:text-3xl">{entry.org}</h3>
+      <div className="col-start-2 row-start-2 rounded-xl border bg-surface p-6 transition-colors hover:border-border-strong md:col-start-3 md:row-start-1 md:p-8">
+        <h3 className="text-xl headline md:text-2xl">{entry.org}</h3>
         <p className="mt-2 text-lg text-foreground">{entry.role}</p>
         {entry.team ? <p className="text-muted">{entry.team}</p> : null}
         {entry.summary ? <p className="mt-3 max-w-2xl text-muted">{entry.summary}</p> : null}

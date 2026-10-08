@@ -68,9 +68,8 @@ function DomainTags({ items, label }: { items: readonly string[]; label: string 
 
 /**
  * Tier 1 and 2: a system component, not an image card. Four parts, always in this order: header
- * strip, title block, flow diagram, footer. The medium cards share their row tracks (subgrid, md
- * and up), so the rules between the parts line up across a row and the extra height sits where
- * the content really differs (a longer tagline) instead of as a gap above the diagram.
+ * strip, title block, flow diagram, footer. Cards in a row stretch to the same height, with the
+ * diagram taking up the slack so the footers line up.
  */
 function SystemCard({ project, size }: { project: Project; size: "lg" | "md" }) {
   const lg = size === "lg";
@@ -80,8 +79,6 @@ function SystemCard({ project, size }: { project: Project; size: "lg" | "md" }) 
       className={cn(
         cardBase,
         "flex h-full flex-col",
-        // Subgrid: the four parts become rows of the parent list, which spans four tracks per card.
-        !lg && "md:row-span-4 md:grid md:grid-rows-subgrid md:gap-y-0",
       )}
     >
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b px-6 py-3">
@@ -112,7 +109,7 @@ function SystemCard({ project, size }: { project: Project; size: "lg" | "md" }) 
 
       {/* Flagship: the diagram sits at the bottom of the stretched card. Medium: it stays directly
           under its tagline, and any extra height rests above the footer rule. */}
-      <div className={cn("flex flex-col px-6 py-6", lg && "flex-1 justify-end md:px-8 md:py-8")}>
+      <div className={cn("flex flex-1 flex-col justify-end px-6 py-6", lg && "md:px-8 md:py-8")}>
         <MiniDiagram flow={project.flow} slug={project.slug} label={`${project.name} flow`} />
       </div>
 
@@ -167,17 +164,86 @@ function SystemRow({ project }: { project: Project }) {
   );
 }
 
+type Theme = {
+  id: string;
+  title: string;
+  blurb: string;
+  /** Slugs in display order. A system that is in no theme is shown under "More systems". */
+  slugs: readonly string[];
+};
+
+/** The systems, grouped by what they are for. Each group is one row: a title rail and its cards. */
+const THEMES: readonly Theme[] = [
+  {
+    id: "systems-security",
+    title: "Systems security",
+    blurb: "Containment at the operating-system boundary, for processes and for AI agents.",
+    slugs: ["owl"],
+  },
+  {
+    id: "detection-soc",
+    title: "Detection & SOC",
+    blurb: "Telemetry turned into attack chains, and suspicious email turned into evidence.",
+    slugs: ["signalfusion-core", "desas", "ml-incident-response"],
+  },
+  {
+    id: "dfir",
+    title: "DFIR & investigation",
+    blurb: "Autonomous investigation that has to show the evidence behind each finding.",
+    slugs: ["helios"],
+  },
+  {
+    id: "ai-security",
+    title: "AI security",
+    blurb: "Controls around models and agents: what enters, what runs and what may act.",
+    slugs: ["securemodelgate", "witness"],
+  },
+  {
+    id: "causal-ml",
+    title: "Causal ML & AIOps",
+    blurb: "Finding the signals that lead an incident, not the ones that follow it.",
+    slugs: ["silentstorm"],
+  },
+];
+
+const pad = (n: number) => String(n).padStart(2, "0");
+
+/** The slug of the last half-width card when there is an odd number of them, else null. */
+function widestMedium(projects: readonly Project[]): string | null {
+  const medium = projects.filter((project) => project.tier === 2);
+  return medium.length % 2 === 1 ? (medium.at(-1)?.slug ?? null) : null;
+}
+
+/** Groups every project under its theme, in theme order. Nothing in the content can go missing. */
+function groupProjects(projects: readonly Project[]) {
+  const bySlug = new Map(projects.map((project) => [project.slug, project]));
+  const themed = new Set(THEMES.flatMap((theme) => theme.slugs));
+  const groups = THEMES.map((theme) => ({
+    ...theme,
+    // Wide cards first, then half-width cards, then compact rows, so no row is left half empty.
+    projects: theme.slugs
+      .flatMap((slug) => bySlug.get(slug) ?? [])
+      .sort((a, b) => a.tier - b.tier),
+  }));
+  const rest = projects.filter((project) => !themed.has(project.slug));
+  if (rest.length > 0) {
+    groups.push({ id: "more", title: "More systems", blurb: "", slugs: [], projects: rest });
+  }
+  return groups.filter((group) => group.projects.length > 0);
+}
+
 /**
- * 02 / SYSTEMS (numbered by CSS counter, so the number stays continuous when the recruiter view
- * hides sections). Visual weight follows tier: two large flagship cards, three medium cards, one
- * compact row. Under the cards: the earlier-work archive (which also holds the one link to the
- * GitHub profile) and the engineering activity counts, both engineer view only (the recruiter
- * view keeps every system card).
+ * SYSTEMS (numbered by CSS counter). Grouped by theme, each group a row with a sticky title rail on
+ * the left and its systems on the right. A flagship system is a wide card, a major one a half-width
+ * card, a supporting one a compact row. Under the groups: the earlier-work archive (which also
+ * holds the one link to the GitHub profile) and the engineering activity counts.
  */
 export function SystemGrid() {
-  const flagship = getProjectsByTier(1);
-  const major = getProjectsByTier(2);
-  const supporting = getProjectsByTier(3);
+  const groups = groupProjects([
+    ...getProjectsByTier(1),
+    ...getProjectsByTier(2),
+    ...getProjectsByTier(3),
+  ]);
 
   return (
     <Section
@@ -185,54 +251,59 @@ export function SystemGrid() {
       autoNumber
       label="SYSTEMS"
       title="Systems, not demos."
-      intro="Detection, correlation and agent security. Each system has its own page; the ones with an architecture diagram are written up as case studies."
+      intro="Detection, correlation and agent security. Each system has its own page; the ones with an architecture diagram are written up as case studies, and the others have a short overview."
     >
-      <div className="flex flex-col gap-6">
-        {flagship.length > 0 ? (
-          <ul aria-label="Flagship systems" className="grid gap-6 lg:grid-cols-2">
-            {flagship.map((project, index) => (
-              <li key={project.slug}>
-                <Reveal className="h-full" delay={index === 0 ? 0 : 1}>
-                  <SystemCard project={project} size="lg" />
-                </Reveal>
-              </li>
-            ))}
-          </ul>
-        ) : null}
+      <div className="flex flex-col gap-12">
+        {groups.map((group, groupIndex) => (
+          <div
+            key={group.id}
+            aria-labelledby={`${group.id}-heading`}
+            role="group"
+            className="grid gap-6 border-t pt-10 first:border-t-0 first:pt-0 lg:grid-cols-12 lg:gap-x-8"
+          >
+            <div className="lg:col-span-4">
+              <div className="lg:sticky lg:top-24">
+                <Label>
+                  <span className="text-accent-text">{pad(groupIndex + 1)}</span> /{" "}
+                  {pad(group.projects.length)} {group.projects.length === 1 ? "SYSTEM" : "SYSTEMS"}
+                </Label>
+                <h3 id={`${group.id}-heading`} className="mt-3 text-2xl headline md:text-3xl">
+                  {group.title}
+                </h3>
+                {group.blurb ? <p className="mt-3 max-w-sm text-muted">{group.blurb}</p> : null}
+              </div>
+            </div>
 
-        {major.length > 0 ? (
-          <ul aria-label="Major systems" className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {major.map((project, index) => (
-              <li
-                key={project.slug}
-                className="md:row-span-4 md:grid md:grid-rows-subgrid md:gap-y-0 md:last:odd:col-span-2 lg:last:odd:col-span-1"
-              >
-                <Reveal
-                  className="h-full md:row-span-4 md:grid md:grid-rows-subgrid md:gap-y-0"
-                  delay={index === 0 ? 0 : index === 1 ? 1 : 2}
+            <ul
+              aria-label={`${group.title} systems`}
+              className="grid gap-4 sm:grid-cols-2 lg:col-span-8"
+            >
+              {group.projects.map((project, index) => (
+                <li
+                  key={project.slug}
+                  className={cn(
+                    // Flagships and rows are full width. An odd half-width card at the end of its
+                    // run takes the full width too, so the row has no gap.
+                    (project.tier !== 2 || project.slug === widestMedium(group.projects)) &&
+                      "sm:col-span-2",
+                  )}
                 >
-                  <SystemCard project={project} size="md" />
-                </Reveal>
-              </li>
-            ))}
-          </ul>
-        ) : null}
-
-        {supporting.length > 0 ? (
-          <ul aria-label="Supporting systems" className="flex flex-col gap-6">
-            {supporting.map((project) => (
-              <li key={project.slug}>
-                <Reveal>
-                  <SystemRow project={project} />
-                </Reveal>
-              </li>
-            ))}
-          </ul>
-        ) : null}
+                  <Reveal className="h-full" delay={index === 0 ? 0 : 1}>
+                    {project.tier === 3 ? (
+                      <SystemRow project={project} />
+                    ) : (
+                      <SystemCard project={project} size={project.tier === 1 ? "lg" : "md"} />
+                    )}
+                  </Reveal>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
       </div>
 
-      <EarlierWork className="mt-24" />
-      <div data-engineer-only className="mt-24">
+      <EarlierWork className="mt-16" />
+      <div data-engineer-only className="mt-16">
         <EngineeringActivity />
       </div>
 

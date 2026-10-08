@@ -1,20 +1,20 @@
 import { expect, type Page } from "@playwright/test";
 import { UI_EVENTS } from "../../lib/ui-events";
 
-/** Dialog that appears when the palette opens. Its accessible name is set in components/command. */
-const PALETTE = { role: "dialog", name: "Command palette" } as const;
+/** The dialog that appears when the terminal opens. Its accessible name is set in components/terminal. */
+const TERMINAL = { role: "dialog", name: "Terminal" } as const;
 
 /**
  * Resolves once the page's React tree has hydrated and attached its window listeners.
  *
- * The palette registers its keyboard and open-event listeners in an effect, so a key pressed
- * before hydration is silently lost. Opening the palette through its own event is idempotent
- * (a second event while open does nothing), so it can be retried until it works, then closed.
+ * The terminal registers its open-event listener in an effect, so an event dispatched before
+ * hydration is silently lost. Opening the terminal through its own event is idempotent (a second
+ * event while open does nothing), so it can be retried until it works, then closed.
  */
 export async function waitForHydration(page: Page): Promise<void> {
-  const dialog = page.getByRole(PALETTE.role, { name: PALETTE.name });
+  const dialog = page.getByRole(TERMINAL.role, { name: TERMINAL.name });
   await expect(async () => {
-    await page.evaluate((name) => window.dispatchEvent(new Event(name)), UI_EVENTS.openPalette);
+    await page.evaluate((name) => window.dispatchEvent(new Event(name)), UI_EVENTS.openTerminal);
     await expect(dialog).toBeVisible({ timeout: 750 });
   }).toPass({ timeout: 15_000 });
   await page.keyboard.press("Escape");

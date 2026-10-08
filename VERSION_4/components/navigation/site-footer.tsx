@@ -13,6 +13,7 @@ const legalLinkClass = cn(linkBase, "label-mono");
 const contactLinks = [
   { label: "GitHub", href: site.github, external: true },
   { label: "LinkedIn", href: site.linkedin, external: true },
+  { label: "DEV", href: site.devto, external: true },
   // Constant address from lib/site.ts, no user input, so no query string to encode.
   { label: "Email", href: `mailto:${site.email}`, external: false },
 ] as const;
@@ -21,7 +22,7 @@ const contactLinks = [
 // are reachable from anywhere without the palette or the Recruiter view. Privacy and the
 // security.txt file (a static file, not a route) close the row.
 const pageLinks = [
-  { label: "Certifications", href: "/certifications/" },
+  { label: "Certifications", href: "/#certifications" },
   { label: "Security", href: "/security/" },
   { label: "Privacy", href: "/privacy/" },
 ] as const;
@@ -34,12 +35,15 @@ const pageLinks = [
 export function SiteFooter() {
   return (
     <footer className="relative z-10 border-t bg-background">
-      <Container className="py-16 md:py-24">
+      <Container className="py-12 md:py-16">
         <div className="grid grid-cols-1 gap-8 md:grid-cols-12 md:gap-6">
           <div className="md:col-span-7">
             <p className="label-mono text-foreground">{site.name.toUpperCase()}</p>
             <p className="mt-4 text-lg text-foreground">Security Engineer</p>
             <p className="mt-1 text-muted">Detection · Cloud · AI Security</p>
+            <p className="mt-4 label-mono text-muted">
+              <span className="text-foreground">{site.brandName}</span> {site.brandMeaning}
+            </p>
             <AvailabilityStatus pulse={false} className="mt-6" />
           </div>
 
@@ -68,7 +72,7 @@ export function SiteFooter() {
           </nav>
         </div>
 
-        <div className="mt-12 flex flex-col gap-4 border-t pt-6 md:mt-16 md:flex-row md:flex-wrap md:items-center md:justify-between md:gap-6">
+        <div className="mt-8 flex flex-col gap-4 border-t pt-6 md:mt-10 md:flex-row md:flex-wrap md:items-center md:justify-between md:gap-6">
           <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-6">
             <Label>© {site.builtOn}</Label>
             <p className="flex items-center gap-2 label-mono text-muted">
@@ -96,11 +100,6 @@ export function SiteFooter() {
             </ul>
           </nav>
 
-          {/* Keyboard hint only where a keyboard is likely; touch users have the Search button in the menu. */}
-          <p data-js-only className="hidden label-mono text-muted pointer-fine:block">
-            <kbd className="rounded-sm border px-1 py-0.5 font-mono">⌘K</kbd> /{" "}
-            <kbd className="rounded-sm border px-1 py-0.5 font-mono">CTRL K</kbd> SEARCH
-          </p>
         </div>
       </Container>
     </footer>

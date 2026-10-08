@@ -141,7 +141,7 @@ export function ProjectCard({ project, size, className }: ProjectCardProps) {
           flow={project.flow}
           slug={project.slug}
           label={`${project.name} flow`}
-          className="mt-auto"
+          className=""
         />
       </div>
 

@@ -44,11 +44,11 @@ export function PageHeader({
   const eyebrow = titleStyle === "eyebrow";
 
   return (
-    <section aria-labelledby={id} className={className}>
+    <section aria-labelledby={id} className={cn(!eyebrow && "hero-glow border-b", className)}>
       <Container
         className={cn(
           "grid gap-12",
-          eyebrow ? "pt-12 pb-8 md:pt-24 md:pb-12" : "pt-12 pb-16 md:pt-24 md:pb-24",
+          eyebrow ? "pt-10 pb-6 md:pt-16 md:pb-8" : "pt-10 pb-12 md:pt-16 md:pb-14",
           aside ? "lg:grid-cols-12 lg:gap-x-6" : "",
         )}
       >
@@ -72,7 +72,7 @@ export function PageHeader({
               </Label>
               <h1
                 id={id}
-                className="mt-8 max-w-[14ch] text-4xl display break-words xs:text-5xl md:text-7xl xl:text-8xl"
+                className="mt-5 max-w-[14ch] text-4xl display break-words xs:text-4xl md:text-5xl xl:text-6xl"
               >
                 {title}
               </h1>

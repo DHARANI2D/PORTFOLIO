@@ -26,7 +26,7 @@ The statements most likely to be wrong, in priority order:
 4. **SignalFusion Core, the Analyst node.** FACTS says AI-assisted investigation. It does not say a person reviews every finding before response. The diagram routes AI investigation to Analyst to Response with no direct edge, the card flow shows Analyst review, a trust boundary, a decision and a control assume it, and field note 001 repeats it (diagram, alt text, caption, the sentence after the diagram). If some responses are automated, change all of those together.
 5. **SignalFusion Core, where ATT&CK modeling sits.** FACTS gives the pipeline as correlation engine, AI investigation, response. ATT&CK mapping is drawn as a stage between correlation and investigation, here and in field note 001.
 6. **AI security skill depth.** Six depth names come from the project brief, not FACTS: Secure AI Architecture, Tool Integrity, Model Governance, Autonomous Remediation, AI Red Teaming, AI Monitoring. Delete any you would not claim.
-7. **ARGUS, Voltrix, DESAS flows and overviews.** Each card shows a short flow derived from the name and domain only. Each overview is one editorial paragraph that places the system next to related ones and says nothing about how it works. Replace with the real stages and description, or delete.
+7. **Voltrix, DESAS flows and overviews.** Each card shows a short flow derived from the name and domain only. Each overview is one editorial paragraph that places the system next to related ones and says nothing about how it works. Replace with the real stages and description, or delete.
 8. **WITNESS, stale evidence and re-validation at execution time.** Not in FACTS. Added as design reasoning for the time-of-check to time-of-use case: a failure mode, an attack-surface item, an assumption, a control, an engineering decision (labelled design reasoning on the page), an edge from Environment state to Execution, and one open question on the research page. Confirm that this is how you want to treat an allow, or delete it.
 9. **Field notes, dates and practice claims.** All three notes carry the date 2026-10-04, the authoring date, not a publication date. Set the real date in each note's `meta` block when you publish. The notes also contain first-person statements about how you work. See the Field notes section for each one.
 
@@ -170,67 +170,18 @@ Source: `content/projects/aegis.ts`. FACTS gives the expansion, the four control
 
 | Where | Statement | Basis |
 | --- | --- | --- |
-| aegis / summary | An agent with access to real resources can be steered or can misuse that access. AEGIS puts identity, intent, policy and semantic checks between an agent’s request and the resource it wants. | Not a restatement of FACTS. The 30-second layer states why it matters. Derived from zero-trust control plane for AI agents with explicit trust boundaries, and from the controls against prompt injection and AI misuse. The earlier summary only listed the four controls. Confirm or reword. |
-| aegis / metaDescription | AEGIS is a zero-trust control plane for AI agents: identity validation, intent-aware authorization, policy-based access control and semantic controls. | Editorial. One complete sentence for search results and link previews. Restates your description. |
-| aegis / architecture / node `agent` | AI agent (Autonomous system). Process: Requests access to a resource on behalf of a task. Trust boundary: Outside the control plane. Every request crosses the boundary. | Derived. FACTS says AEGIS is a control plane for AI agents with explicit trust boundaries around autonomous systems. The request wording is general. |
-| aegis / architecture / node `identity` | Identity validation (Who is asking?). Process: Validates the identity of the agent making the request. | FACTS names identity validation. One-line process wording derived from the name. |
-| aegis / architecture / node `intent` | Intent-aware authorization (What is it for?). Process: Authorizes the request against the intent behind it, not only the identity. | FACTS names intent-aware authorization. Wording derived from the name. |
-| aegis / architecture / node `policy` | Policy-based access control (Is it permitted?). Process: Evaluates the request against policy. | FACTS names policy-based access control. Wording derived from the name. |
-| aegis / architecture / node `semantic` | Semantic controls (Prompt injection and misuse). Process: Applies controls to the meaning of a request, against prompt injection and AI misuse. | FACTS: semantic controls against prompt injection and AI misuse. Wording follows it closely. |
-| aegis / architecture / node `resource` | Resource (Reached only after the controls). Process: Receives only requests that passed every control. Trust boundary: Protected side of the boundary. | Derived from the project brief's flow, ending at the resource. Not in FACTS. |
-| aegis / architecture / structure | Layers drawn in order: identity validation, intent-aware authorization, policy, semantic controls, then the resource. Boundary: AEGIS control plane around the four layers. Caption: Schematic of the design. Each layer answers a different question about a request from an agent. | FACTS lists the four controls in this order and states explicit trust boundaries. Treating them as a request-time chain, and the resource node, are derived from the project brief. |
-| aegis / flow | Identity validation > Intent-aware authorization > Policy > Semantic controls > Resource | The first four stages are your four controls in your order, with Policy shortened from policy-based access control. Resource is added from the project brief. |
-| aegis / classification | category: AI Security. domain: AI Security, Zero trust, Governance, Policy. graphNodes: ai, agents. stack and problem: none given. | FACTS gives no domain tags for AEGIS. Tags use words from its name and description. graphNodes is editorial. |
-| aegis / threatModel.assets[0] | The resources agents can reach | Derived: what an agent control plane protects. |
-| aegis / threatModel.assets[1] | The policy that defines what each agent may do | Derived: what an agent control plane protects. |
-| aegis / threatModel.assets[2] | Agent identities | Derived: what an agent control plane protects. |
-| aegis / threatModel.attackSurface[0] | Requests from agents to resources | Derived from the described control layers. |
-| aegis / threatModel.attackSurface[1] | Prompts and inputs that can steer an agent | Derived from the described control layers. |
-| aegis / threatModel.attackSurface[2] | The intent an agent declares for a request | Derived from the described control layers. |
-| aegis / threatModel.attackSurface[3] | The policy definitions | Derived from the described control layers. |
-| aegis / threatModel.trustBoundaries[0] | Agent to control plane: every request crosses it. | Derived from explicit trust boundaries around autonomous systems. |
-| aegis / threatModel.trustBoundaries[1] | Control plane to resource: access follows only after the controls pass. | Derived from explicit trust boundaries around autonomous systems. |
-| aegis / threatModel.threatActors[0] | An attacker who steers an agent with injected instructions | Derived: who prompt-injection and misuse controls exist to stop. |
-| aegis / threatModel.threatActors[1] | A compromised or impersonated agent identity | Derived: who prompt-injection and misuse controls exist to stop. |
-| aegis / threatModel.threatActors[2] | An agent acting outside its intended purpose | Derived: who prompt-injection and misuse controls exist to stop. |
-| aegis / threatModel.assumptions[0] | Agent requests are routed through the control plane | Derived: what a control plane needs to be true in order to work. |
-| aegis / threatModel.assumptions[1] | Policy is authored outside the agent’s reach | Derived: what a control plane needs to be true in order to work. |
-| aegis / threatModel.failureModes[0] | Authorization on identity alone lets a valid agent use its access for the wrong purpose | Derived design reasoning. Written as risks, not as incidents that happened. |
-| aegis / threatModel.failureModes[1] | A policy gap leaves a request with no rule to evaluate it | Derived design reasoning. Written as risks, not as incidents that happened. |
-| aegis / threatModel.failureModes[2] | A semantic control misses a new phrasing of an injection | Derived design reasoning. Written as risks, not as incidents that happened. |
-| aegis / threatModel.failureModes[3] | The control plane is unavailable, and bypassing it to keep agents running defeats the control | Derived design reasoning. Written as risks, not as incidents that happened. |
-| aegis / threatModel.controls[0] | Identity validation | Restates the four controls and the trust boundaries from FACTS. Listed because the grouping as controls is derived. |
-| aegis / threatModel.controls[1] | Intent-aware authorization | Restates the four controls and the trust boundaries from FACTS. Listed because the grouping as controls is derived. |
-| aegis / threatModel.controls[2] | Policy-based access control | Restates the four controls and the trust boundaries from FACTS. Listed because the grouping as controls is derived. |
-| aegis / threatModel.controls[3] | Semantic controls against prompt injection and misuse | Restates the four controls and the trust boundaries from FACTS. Listed because the grouping as controls is derived. |
-| aegis / threatModel.controls[4] | Explicit trust boundaries around autonomous systems | Restates the four controls and the trust boundaries from FACTS. Listed because the grouping as controls is derived. |
-| aegis / decisions[0] | Q: Why validate identity before authorizing? A: Authorization on an unverified identity is authorization for whoever claims it. Identity comes first so every later decision has a subject it can trust. | Derived design reasoning. FACTS names identity validation but not why it comes first. |
-| aegis / decisions[1] | Q: Why authorize by intent as well as identity? A: Identity says who is asking, not what for. An agent with legitimate access can still be steered into using it for the wrong purpose. Checking intent narrows access to what the task needs. | Reasoned from intent-aware authorization. |
-| aegis / decisions[2] | Q: Why add semantic controls on top of policy? A: Policy decides what is structurally allowed. Prompt injection and misuse act through meaning, which resource-level rules do not see. Semantic controls look at what is being asked. | Reasoned from semantic controls against prompt injection and AI misuse. |
-| aegis / decisions[3] | Q: Why a control plane instead of controls inside each agent? A: A control inside the agent can be bypassed by an agent that is compromised or steered. A separate plane keeps the trust boundary outside the system it constrains. | Reasoned from zero-trust control plane and explicit trust boundaries around autonomous systems. |
-| aegis / security[0] | The control plane becomes a critical dependency. It needs its own protection and a defined behavior when it fails. | Derived: general property of a control plane. |
-| aegis / security[1] | Semantic controls reduce risk. They do not replace identity and policy checks. | Derived: general reasoning about semantic controls. |
-| aegis / security[2] | Policy is the source of truth for what an agent may do, so changes to it should be restricted and reviewed. | Derived design intent. FACTS does not describe how policy is managed. |
 
-## ARGUS, Voltrix and DESAS
+## Voltrix and DESAS
 
-Sources: `content/projects/argus.ts`, `voltrix.ts`, `desas.ts`. FACTS gives one line each. These entries carry only that, plus the rows below. Each overview is one paragraph and does not repeat the tagline, summary or flow. Action: supply detail (see the last section) or confirm these stay short.
+Sources: `content/projects/voltrix.ts`, `desas.ts`. FACTS gives one line each. These entries carry only that, plus the rows below. Each overview is one paragraph and does not repeat the tagline, summary or flow. Action: supply detail (see the last section) or confirm these stay short.
 
 | Where | Statement | Basis |
 | --- | --- | --- |
-| argus / flow | Malware sample > Autonomous agents > Analysis | FACTS gives only agentic autonomous malware analysis. Malware sample is implied by malware analysis. Autonomous agents restates the description. Replace with the real stages, or delete. |
-| argus / classification | category: DFIR & Malware. graphNodes: dfir, ai, agents. stack, architecture, threat model and decisions: none. | Domain (DFIR, Malware, AI) is as you gave it. category and graphNodes are editorial. Nothing else is written because FACTS has nothing else. |
-| argus / overview[0] | ARGUS is one of two DFIR systems on this site, with Voltrix: ARGUS on the analysis side, Voltrix on the response side. The AI DFIR research direction, agentic incident-response architecture, is the wider question they sit under. | Editorial, not from FACTS. FACTS gives one line and the domain. The paragraph places ARGUS next to Voltrix (both carry the DFIR domain tag) and the AI DFIR research direction, and calls ARGUS the analysis side and Voltrix the response side, which is read from malware analysis and incident response in their names. It says nothing about how ARGUS works. Replace once you supply detail, or delete. |
-| argus / metaDescription | ARGUS is an agentic, autonomous malware analysis system in the DFIR, malware and AI domains. | Editorial. One complete sentence for search results and link previews. Restates your description and domain. |
-| voltrix / flow | Incident > Agents > Automated response | FACTS gives only AI-driven incident response platform and the domain DFIR, Agents, Automation. The three stages use those domain words. Replace with the real stages, or delete. |
-| voltrix / classification | category: DFIR & Automation. graphNodes: dfir, agents, automation. stack, architecture, threat model and decisions: none. | Domain is as you gave it. category and graphNodes are editorial. |
-| voltrix / overview[0] | Voltrix is the response side of the two DFIR systems on this site, next to ARGUS, which covers malware analysis. The AI DFIR research direction, agentic incident-response architecture, is the wider question they sit under. | Editorial, not from FACTS. The paragraph places Voltrix next to ARGUS and the AI DFIR research direction, and calls Voltrix the response side, which is read from incident response in its description. It says nothing about how Voltrix works. Replace once you supply detail, or delete. |
-| voltrix / metaDescription | Voltrix is an AI-driven incident response platform in the DFIR, agents and automation domains. | Editorial. One complete sentence for search results and link previews. Restates your description and domain. |
 | desas / flow | Email > Sandbox > Analysis | Restates the words of the name: Dynamic Email Sandbox Analysis System. No further stage is claimed. |
 | desas / classification | category: Email Security. domain: Email, Sandbox, Analysis. graphNodes: detection, dfir. stack, architecture, threat model and decisions: none. | FACTS gives no domain for DESAS. Domain tags are the words of the name. category and graphNodes are editorial. |
 | desas / summary | Analyzes email in a dynamic sandbox. | Restates the name. No capability is claimed beyond it. |
-| desas / overview[0] | DESAS is the email security system on this site. Dynamic analysis, as a general technique, observes what content does when it runs in an isolated environment, instead of only inspecting it, which is the idea the name points to. | Editorial, not from FACTS. FACTS gives only the expansion of the name. The second sentence is a general definition of dynamic analysis, not a claim about how DESAS works. Replace once you supply detail, or delete. |
-| desas / metaDescription | DESAS is the Dynamic Email Sandbox Analysis System, an email security system that analyzes email in a dynamic sandbox. | Editorial. One complete sentence for search results and link previews. Built from the name and the category, Email Security, which is editorial. |
+| desas / overview[0] | DESAS is a desktop tool for investigating a suspicious email end to end. It reads the headers and checks SPF, DKIM and DMARC, analyses the links and attachments, and detonates content in a sandbox. Attachment checks include PDF, DOCX and Excel extraction, OCR, polyglot and appended-payload detection, OLE analysis and hunting for XLM macros, with heuristics for hidden image content. Findings are enriched through VirusTotal and MXToolbox and mapped to MITRE ATT&CK, in an Electron interface. | Editorial, not from FACTS. FACTS gives only the expansion of the name. The second sentence is a general definition of dynamic analysis, not a claim about how DESAS works. Replace once you supply detail, or delete. |
+| desas / metaDescription | DESAS is the Dynamic Email Sandbox Analysis System: email forensics and sandbox detonation for phishing and malicious attachments. | Editorial. One complete sentence for search results and link previews. Built from the name and the category, Email Security, which is editorial. |
 
 ## Research items
 
@@ -255,12 +206,12 @@ Sources: `content/research/*.ts`. Abstracts restate FACTS section A. Each item a
 | research / securemodelgate / notes[3] | Trust boundaries have to be explicit. An interaction that crosses one needs a verifiable reason to be allowed. | Derived from trust boundaries. The verifiable-reason claim is reasoning. |
 | research / securemodelgate / notes[4] | Shares a premise with AEGIS and WITNESS: control sits outside the model, at the point where action happens. | Editorial. FACTS does not relate SecureModelGate to AEGIS or WITNESS. Confirm the shared premise or delete. |
 | research / securemodelgate / relatedProjects | aegis, witness | Editorial. FACTS does not link them. Confirm or delete. |
-| research / securemodelgate / metaDescription | SecureModelGate is a research item on runtime security enforcement for AI systems, using deterministic policy, trust boundaries and runtime verification. | Editorial. One complete sentence for search results and link previews, so the page does not cut the abstract mid-clause. Restates your description. |
+| research / securemodelgate / metaDescription | SecureModelGate is a research paper on AI model attestation: signed tokens and a Kubernetes admission webhook that block untrusted models. | Editorial. One complete sentence for search results and link previews, so the page does not cut the abstract mid-clause. Restates your description. |
 | research / ai-dfir / notes[0] | Incident response is a sequence of decisions under time pressure. An agentic design has to say which steps are safe to automate and which need a person, and that boundary moves with the cost of being wrong. | Derived: general reasoning about incident response and automation. Not stated by you. |
 | research / ai-dfir / notes[1] | Evidence handling constrains the design. An agent that touches a system during an investigation can change what it is investigating. | Derived: general forensic principle. Not stated by you. |
 | research / ai-dfir / notes[2] | An investigation has to be reconstructable afterwards, so auditability matters as much as speed. | Derived: general principle. Not stated by you. |
 | research / ai-dfir / notes[3] | An agent that proposes containment is making a remediation claim. That is the question WITNESS is built around. | Editorial link to WITNESS. Confirm or delete. |
-| research / ai-dfir / relatedProjects | voltrix, argus, witness | Editorial. Linked through the DFIR domain tags on ARGUS and Voltrix, and through agent remediation. Confirm or delete. |
+| research / ai-dfir / relatedProjects | helios, aegis-dfir, voltrix, witness | Editorial. Linked through the DFIR domain tags on HELIOS and Voltrix, and through agent remediation. Confirm or delete. |
 | research / ai-dfir / abstract | how autonomous agents could take part in digital forensics and incident response. It is a direction, not a published result. | FACTS: research direction only, no papers. DFIR expanded to digital forensics and incident response, which is the standard meaning. |
 | research / ai-dfir / metaDescription | AI DFIR is a research direction on agentic incident-response architecture: how autonomous agents could take part in forensics and incident response. | Editorial. One complete sentence for search results and link previews, so the page does not cut the abstract mid-clause. Restates your description. |
 | research / agentic-security / notes[0] | An agent that can act has a larger attack surface than one that only answers, because its inputs can now cause actions. | Derived: general reasoning about agents. Not stated by you. |
@@ -275,7 +226,7 @@ Sources: `content/research/*.ts`. Abstracts restate FACTS section A. Each item a
 
 ## Experience
 
-Source: `content/experience.ts`. Bullets are yours, lightly edited. Facilio has no description because none is known. Action: confirm the light edits, or restore your original wording.
+Source: `content/experience.ts`. Bullets are yours, lightly edited. Facilio has no bullets because what was built there is not known; its summary says what the company does and names your stack. Action: confirm the light edits, or restore your original wording.
 
 | Where | Statement | Basis |
 | --- | --- | --- |
@@ -285,6 +236,7 @@ Source: `content/experience.ts`. Bullets are yours, lightly edited. Facilio has 
 | experience / hpe-soc / tags | SOC, SIEM, MITRE ATT&CK, Python, AWS, Azure, IAM | Editorial selection of terms that appear in the bullets. |
 | experience / hpe-intern / bullets | Same light edit: semicolons split into sentences. | Meaning is unchanged. |
 | experience / hpe-intern / tags | SIEM, Splunk, CrowdStrike, Wiz, Azure | Editorial selection of terms that appear in the bullets. |
+| experience / facilio-intern / summary | Facilio builds a connected CMMS: cloud software that uses IoT data and AI to run maintenance and operations across commercial buildings. Worked with Redis, Kafka and Apache. | Company description from Facilio's public website (a connected CMMS: IoT and AI software for maintenance and operations in commercial buildings). Redis, Kafka and Apache are from you. Nothing about what you built is claimed. Confirm, or add what you did. |
 | experience / facilio-intern / dates | start: 2024, no end. | FACTS gives only the year. No month and no end are claimed. Add dates if you want them shown. |
 | experience / education / entry | B.E. Computer Science & Engineering, Sri Krishna College of Engineering & Technology, 2021 to 2025, Anna University, CGPA 8.5/10. | FACTS A, restated. Listed so pages know education is stored as an experience entry with id education. |
 
@@ -336,7 +288,7 @@ Sources: `content/writing/*.mdx`. The three notes are derived from FACTS section
 | Where | Statement | Basis |
 | --- | --- | --- |
 | note 001 (siem-alerts-to-correlated-investigations) / meta | date: 2026-10-04. number: 1. tags: Detection, SOC, Correlation, SignalFusion Core. title: From SIEM alerts to correlated investigations. The summary is two sentences. | The date 2026-10-04 is the authoring date, not a verified publication date. Set the real date in the note's meta block when you publish (FACTS section D, rule 4). The date appears on the notes list and the home page, in the Article JSON-LD (datePublished and dateModified), in article:published_time and as the sitemap lastmod. All three notes carry the same date on purpose, so the site does not show a publishing cadence you did not have. Same-day notes sort by number. The tag SignalFusion Core matches the system name so the case study and the note can link to each other. Title and summary are editorial. |
-| note 001 / Problem | I triage 100+ security alerts a day in an enterprise SOC. | FACTS section A: triage 100+ daily security alerts in an enterprise SOC. Restated in the first person. |
+| note 001 / Problem | I triage security alerts every day in an enterprise SOC. | FACTS section A: triage daily security alerts in an enterprise SOC. Restated in the first person, with no count. |
 | note 001 / Problem | The decision is rarely about that event alone. It is about what else happened to the same account, host or mailbox before and after it. | First-person practice claim, not in FACTS. Derived from root cause analysis and incident lifecycle work in FACTS and from general SOC reasoning. Confirm this is how you triage, or delete. |
 | note 001 / Problem | A hypothetical chain: a phishing email is delivered, a sign-in follows from a new location, a mailbox rule is created, an internal login appears on a server. Four alerts from four tools. | Labelled hypothetical on the page. Built from the FACTS list of phishing, account compromise and lateral movement. Not a real incident. |
 | note 001 / Problem | Rebuilding that story by hand is slow, repetitive work. Pivot from the alert to the entity, then to every other source that mentions it, then put the results in order. | First-person practice claim, not in FACTS. Derived from support investigations across endpoint, cloud, identity and email. Confirm this is how you work, or delete. |
@@ -381,17 +333,17 @@ Action: confirm, or change in `content/projects/index.ts`.
 
 | Where | Statement | Basis |
 | --- | --- | --- |
-| projects / ordering | SignalFusion Core, then WITNESS (tier 1). AEGIS, ARGUS, Voltrix (tier 2). DESAS (tier 3). | Tiers are as you gave them. The order inside a tier is editorial. Swap the array order in content/projects/index.ts. |
+| projects / ordering | SignalFusion Core, then WITNESS (tier 1). AEGIS, HELIOS, Voltrix (tier 2). DESAS (tier 3). | Tiers are as you gave them. The order inside a tier is editorial. Swap the array order in content/projects/index.ts. |
 | projects / links | Every project has links: {}. | FACTS: no repo URL is known for any of the six systems. None is shown. |
 | projects / status | Only WITNESS has a status, Research / Prototype. | FACTS gives no status for the other five. None is invented. |
 | projects and research / metaDescription | Each system and each research item has a metaDescription of at most 155 characters, one complete sentence. | Editorial. The page text and the search snippet are written separately, so a snippet is never cut mid-clause. Each restates your description. |
-| projects / summary | The 30-second summary of WITNESS, SignalFusion Core and AEGIS says why the system matters. ARGUS, Voltrix and DESAS keep a short factual summary. | FACTS has no reason-it-matters for ARGUS, Voltrix or DESAS, so none is written. |
+| projects / summary | The 30-second summary of WITNESS, SignalFusion Core and AEGIS says why the system matters. Voltrix and DESAS keep a short factual summary. | FACTS has no reason-it-matters for Voltrix or DESAS, so none is written. |
 
 ## What to supply to improve the site
 
 Each item is something the site cannot say today because FACTS has no answer. Send any of these and the matching rows above can be firmed up or removed.
 
-**Per system (WITNESS, SignalFusion Core, AEGIS, ARGUS, Voltrix, DESAS)**
+**Per system (WITNESS, SignalFusion Core, AEGIS, HELIOS, Voltrix, DESAS)**
 
 - A repository link, if one is public. No project shows a code link today.
 - A status you are comfortable stating (for example prototype, in use, archived). Only WITNESS has one.
@@ -414,7 +366,7 @@ Each item is something the site cannot say today because FACTS has no answer. Se
 - What the response stage does.
 - What Elasticsearch is used for, so it can be placed in the diagram.
 
-**ARGUS, Voltrix, DESAS**
+**Voltrix, DESAS**
 
 - One paragraph each on what the system does. They are one line today. With enough detail an architecture diagram can be added.
 
@@ -429,7 +381,7 @@ Each item is something the site cannot say today because FACTS has no answer. Se
 
 **Career and credentials**
 
-- A description of the Facilio internship, if you want it shown.
+- What you built at Facilio, if you want it shown (only the stack and the company are described now).
 - Months for the Facilio dates.
 - Exact titles for the two Fortinet badges.
 - Years for the certifications that have none.
@@ -441,3 +393,73 @@ Each item is something the site cannot say today because FACTS has no answer. Se
 - Which of the six AI security depth names you want to keep.
 
 <!-- prettier-ignore-end -->
+
+
+## Research papers added Oct 2026
+
+Sources: your papers in `/Users/dharanidharan/Projects/Parasparam/Papers` (MAESTRO, MemForensix, SecureModelGate), described in docs/FACTS.md section A2. Measured results are left out because the site states none. The papers marked HPE Confidential are not on the site. Action: confirm, edit or delete each row.
+
+| Where | Statement | Basis |
+| --- | --- | --- |
+| research / securemodelgate / notes[4] | The mechanism is attestation. A model earns a signed token by passing two independent looks: a static look at its weights and a behavioural look at how it responds. Deployment policy then refuses any model without a valid token. | From your paper (docs/FACTS.md section A2), restated without its measured results. Confirm the wording, or delete. |
+| research / securemodelgate / notes[5] | Backdoored models are the threat being designed for: a model can look normal on clean inputs and misbehave on a trigger, so integrity has to be checked before the model is trusted, not after it is running. | From your paper (docs/FACTS.md section A2), restated without its measured results. Confirm the wording, or delete. |
+| research / securemodelgate / notes[6] | A Model Bill of Materials turns admission into a record. What was admitted, by which check and when is something a governance review can read. | From your paper (docs/FACTS.md section A2), restated without its measured results. Confirm the wording, or delete. |
+| research / maestro / notes[0] | The central idea: memory artifacts are the highest-fidelity evidence available at runtime, and an LLM is only trustworthy when each claim traces back to evidence that can be checked. | From your paper (docs/FACTS.md section A2), restated without its measured results. Confirm the wording, or delete. |
+| research / maestro / notes[1] | The failure mode being designed against is fabrication. A model that invents an indicator or a timestamp produces a report that cannot be used in an investigation, so the output is constrained to what the evidence graph contains. | From your paper (docs/FACTS.md section A2), restated without its measured results. Confirm the wording, or delete. |
+| research / maestro / notes[2] | Memory topology is a first-class part of the knowledge graph, next to log events. That lets deterministic graph queries, not a classifier, carry the structural detections. | From your paper (docs/FACTS.md section A2), restated without its measured results. Confirm the wording, or delete. |
+| research / maestro / notes[3] | Agent hypotheses can trigger a targeted re-acquisition of memory. The reasoning layer asks the evidence layer for more, instead of guessing. | From your paper (docs/FACTS.md section A2), restated without its measured results. Confirm the wording, or delete. |
+| research / maestro / notes[4] | Validation is staged. A claim without a matching evidence ID is dropped before the report is written, so the model's confidence never substitutes for evidence. | From your paper (docs/FACTS.md section A2), restated without its measured results. Confirm the wording, or delete. |
+| research / maestro / notes[5] | The paper is explicit about scope: novel techniques still need an analyst, and an attacker with kernel-level control can in principle blind kernel-level monitoring. | From your paper (docs/FACTS.md section A2), restated without its measured results. Confirm the wording, or delete. |
+| research / maestro / notes[6] | Same premise as WITNESS: separate what an agent claims from what independently observable state supports. | From your paper (docs/FACTS.md section A2), restated without its measured results. Confirm the wording, or delete. |
+| research / maestro / metaDescription | MAESTRO is a research paper on evidence-grounded multi-agent DFIR: every agent claim is tied to a verifiable evidence ID. | Editorial. One complete sentence for search results and link previews. Restates your paper's abstract. |
+| research / memforensix / notes[0] | Two gaps are treated as one problem: detection blind spots for memory-only techniques, and evidence lost by the time an investigator arrives. | From your paper (docs/FACTS.md section A2), restated without its measured results. Confirm the wording, or delete. |
+| research / memforensix / notes[1] | Three stages keep cost down. Cheap behavioural monitoring watches everything, expensive memory acquisition runs only on processes that look risky, and deep analysis runs on what was captured. | From your paper (docs/FACTS.md section A2), restated without its measured results. Confirm the wording, or delete. |
+| research / memforensix / notes[2] | The monitoring signal is a set of behavioural indicators chosen against MITRE ATT&CK process-injection and reflective-loading techniques, not file signatures. | From your paper (docs/FACTS.md section A2), restated without its measured results. Confirm the wording, or delete. |
+| research / memforensix / notes[3] | Preservation is part of detection, not an afterthought. Capturing memory at the moment of suspicion is what makes a timeline, root cause and lateral-movement trace possible later. | From your paper (docs/FACTS.md section A2), restated without its measured results. Confirm the wording, or delete. |
+| research / memforensix / notes[4] | Continuous full memory scanning is too costly to deploy, which is why acquisition is adaptive and triggered by risk. | From your paper (docs/FACTS.md section A2), restated without its measured results. Confirm the wording, or delete. |
+| research / memforensix / notes[5] | Pairs with MAESTRO: MemForensix is the evidence layer, MAESTRO is the reasoning that has to stay grounded in it. | From your paper (docs/FACTS.md section A2), restated without its measured results. Confirm the wording, or delete. |
+| research / memforensix / metaDescription | MemForensix is a research paper on hybrid memory forensics: eBPF monitoring and risk-triggered memory capture with chain of custody. | Editorial. One complete sentence for search results and link previews. Restates your paper's abstract. |
+
+
+## Projects and research added from your inventory, Oct 2026
+
+Source: the project and research inventory you pasted (docs/FACTS.md section A4). Counts, test totals and measured results from it are left out because the site states none. EtherGuard is listed by name only, as you asked, until its technique and results are supplied. Action: confirm, edit or delete each row.
+
+| Where | Statement | Basis |
+| --- | --- | --- |
+| owl / overview | In OWL, authority is held as unforgeable capability tokens. A token can be narrowed when it is handed on, revoking one cascades to everything derived from it, and privileged operations are written to a hash-chained audit log. The aim is for the operating system itself to be the boundary that contains an AI agent, not a policy layered above it. It is written in Rust without the standard library, targets x86-64 under UEFI, includes its own network stack, and has its IPC fuzzed as a state machine and validated in QEMU. | From your own project summary (docs/FACTS.md section A4), restated without counts or measured results. Confirm the wording, or delete. |
+| owl / metaDescription | OWL is a capability-secured Rust microkernel for x86-64 designed to contain ordinary processes and autonomous AI agents at the operating-system boundary. | Editorial. One complete sentence for search results and link previews. |
+| securemodelgate / overview | SecureModelGate inspects a model before it is trusted. It analyses the weights statistically and compares the model's behavioural fingerprint with a clean reference, so a backdoor that stays quiet on ordinary inputs can still show. A model that passes receives a signed attestation token, and a Kubernetes admission webhook refuses any model without one. It was evaluated on image-classification models, clean and backdoored, with several trigger types. The research behind it is on the research page of the same name. | From your own project summary (docs/FACTS.md section A4), restated without counts or measured results. Confirm the wording, or delete. |
+| securemodelgate / metaDescription | SecureModelGate attests ML models before deployment with weight analysis and behavioural fingerprints, enforced by a Kubernetes admission webhook. | Editorial. One complete sentence for search results and link previews. |
+| helios / overview | HELIOS is the Autonomous Security Investigation Platform, and it is being built now. It brings investigation and malware analysis into one system. Agents work through forensic evidence and malware samples, using YARA signatures, memory forensics with Volatility and sandbox results, and relate everything in an evidence graph. Behaviour is mapped to MITRE ATT&CK, the agents reason over the graph with retrieval, and an adversarial validation step challenges a finding before it is reported. | From your project summary (docs/FACTS.md section A4): HELIOS is the former ASIP and absorbs ARGUS. Described without counts. "In development" is your own statement. Confirm the wording, or delete. |
+| helios / metaDescription | HELIOS is a multi-agent security investigation platform in development: evidence graphs, malware analysis and findings grounded in forensic evidence. | Editorial. One complete sentence for search results and link previews. |
+| silentstorm / overview | SilentStorm looks for the signals that come before congestion, not the congestion itself. Causal discovery over network telemetry narrows many metrics to a small set of precursors, and a bidirectional LSTM with attention uses them to raise a warning ahead of time. It was evaluated on an emulated network fabric, and the write-up records the attack classes it fails on as well as where it works. | From your own project summary (docs/FACTS.md section A4), restated without counts or measured results. Confirm the wording, or delete. |
+| silentstorm / metaDescription | SilentStorm uses causal discovery and a temporal model to find the leading indicators of network congestion and warn before it happens. | Editorial. One complete sentence for search results and link previews. |
+| ml-incident-response / overview | This pipeline takes alerts from Snort, Suricata and Zeek into an ELK stack, enriches them with threat intelligence from AbuseIPDB, MISP and Cortex, classifies them with a scikit-learn model, blocks malicious sources with iptables and notifies by Slack or email. SignalFusion Core is the more developed version of the same idea: correlation and response in one system. | From your own project summary (docs/FACTS.md section A4), restated without counts or measured results. Confirm the wording, or delete. |
+| ml-incident-response / metaDescription | ML Incident Response is a pipeline from network IDS telemetry through ELK and threat intelligence to ML classification and automated blocking. | Editorial. One complete sentence for search results and link previews. |
+| research / silentstorm / notes | Correlation is not enough for an early warning. A metric that rises with congestion because both have the same cause gives no lead time, so the method asks which signals actually come first. | Derived from your description of the method. Reasoning, not a stated fact. Confirm, edit or delete. |
+| research / silentstorm / notes | Reducing many metrics to a few causal precursors makes the predictor smaller, and makes its warning explainable in terms an operator can check. | Derived from your description of the method. Reasoning, not a stated fact. Confirm, edit or delete. |
+| research / silentstorm / notes | The warning is only useful if it comes early enough to act on, so lead time is evaluated alongside accuracy. | Derived from your description of the method. Reasoning, not a stated fact. Confirm, edit or delete. |
+| research / silentstorm / notes | Reporting where it fails is part of the result. The work records attack classes the model has not seen and does not claim to cover them. | Derived from your description of the method. Reasoning, not a stated fact. Confirm, edit or delete. |
+| research / silentstorm / notes | The same shape applies to security telemetry: find the signals that lead an incident, not the ones that follow it. | Derived from your description of the method. Reasoning, not a stated fact. Confirm, edit or delete. |
+| research / silentstorm / metaDescription | SilentStorm is research on causal early warning: causal discovery finds the signals that lead network congestion and a temporal model warns ahead. | Editorial. |
+| research / witness / notes | Corroboration has to come from channels the agent cannot write to. Two reports that share a source are really one report, so the checks look for agreement across independent telemetry channels. | From your WITNESS summary (channel-disjoint corroboration, trusted action lineage, tamper-evident evidence, AIOpsLab). Confirm the wording, or delete. |
+| research / witness / notes | Where a proposed action came from matters. The design keeps a trusted record of how each action was produced, so a decision can be traced back through it. | From your WITNESS summary (channel-disjoint corroboration, trusted action lineage, tamper-evident evidence, AIOpsLab). Confirm the wording, or delete. |
+| research / witness / notes | The decision leaves a tamper-evident record, so an allow or a deny can be checked after the fact. | From your WITNESS summary (channel-disjoint corroboration, trusted action lineage, tamper-evident evidence, AIOpsLab). Confirm the wording, or delete. |
+| research / witness / notes | The prototype is exercised against Microsoft AIOpsLab with local language models, and it fails safe: when the gate cannot decide, the action does not run. | From your WITNESS summary (channel-disjoint corroboration, trusted action lineage, tamper-evident evidence, AIOpsLab). Confirm the wording, or delete. |
+
+
+## Brand and ARGUS, Oct 2026
+
+- ARGUS is removed everywhere: you said it is combined into HELIOS and is being built under that name. HELIOS is one project, not two.
+- The site brand changed from "DS / HELIOS" to "DS / TRACE", because HELIOS is now a project. TRACE stands for Threat · Response · Automation · Cloud · Evidence. It is editorial: confirm it, or give me another name.
+
+
+## Removed, Oct 2026
+
+Voltrix, AEGIS, AEGIS-AI and AEGIS-DFIR were removed from the site at your request, with every mention in the research notes, the field note on evidence boundaries and the career text. Rows for them are gone from this sheet.
+
+| Where | Statement | Basis |
+| --- | --- | --- |
+| research / securemodelgate / notes | Shares a premise with WITNESS: control sits outside the model, at the point where action happens. | Edited when AEGIS was removed from the site. Confirm the wording, or delete. |
+| research / agentic-security / notes | Identity, intent and evidence are three different questions. WITNESS is built around the third. | Edited when AEGIS was removed from the site. Confirm the wording, or delete. |

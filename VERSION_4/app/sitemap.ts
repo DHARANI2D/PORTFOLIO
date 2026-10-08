@@ -6,17 +6,10 @@ import { getWritingPosts } from "@/lib/writing";
 // Static export: this file is rendered once at build time into out/sitemap.xml.
 export const dynamic = "force-static";
 
-/** Pages that exist regardless of content. Slugs are listed with the trailing slash the site uses. */
+/** Pages that exist regardless of content. The home page holds every section, so it is one entry. Slugs are listed with the trailing slash the site uses. */
 const STATIC_PATHS = [
   "/",
-  "/about/",
-  "/experience/",
-  "/systems/",
-  "/research/",
-  "/writing/",
-  "/certifications/",
   "/resume/",
-  "/contact/",
   "/privacy/",
   "/security/",
 ] as const;

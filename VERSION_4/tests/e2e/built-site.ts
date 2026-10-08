@@ -59,19 +59,7 @@ export function sitemapPaths(): string[] {
   return paths;
 }
 
-const STATIC_ROUTES = [
-  "/",
-  "/about/",
-  "/experience/",
-  "/systems/",
-  "/research/",
-  "/writing/",
-  "/certifications/",
-  "/resume/",
-  "/contact/",
-  "/privacy/",
-  "/security/",
-] as const;
+const STATIC_ROUTES = ["/", "/resume/", "/privacy/", "/security/"] as const;
 
 /** The pages a visitor is most likely to see: every top-level page and one of each detail page. */
 export function keyRoutes(): string[] {

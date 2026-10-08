@@ -3,12 +3,9 @@
 import { useSyncExternalStore } from "react";
 import {
   DEFAULT_THEME,
-  DEFAULT_VIEW,
   PREFERENCES_EVENT,
   readTheme,
-  readView,
   type Theme,
-  type View,
 } from "@/lib/preferences";
 
 function subscribe(cb: () => void) {
@@ -19,7 +16,4 @@ function subscribe(cb: () => void) {
 /** Client hook. Server snapshot is the default so hydration matches; the real value arrives after mount. */
 export function useTheme(): Theme {
   return useSyncExternalStore(subscribe, readTheme, () => DEFAULT_THEME);
-}
-export function useView(): View {
-  return useSyncExternalStore(subscribe, readView, () => DEFAULT_VIEW);
 }

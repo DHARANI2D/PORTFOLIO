@@ -12,7 +12,7 @@ export const contentType = "image/png";
 // Satori (the renderer behind ImageResponse) cannot read CSS variables, so the palette is spelled
 // out here. These mirror the dark theme tokens in app/globals.css.
 const COLOR = {
-  background: "#090909",
+  background: "#0a0a0c",
   foreground: "#f5f5f5",
   muted: "#929292",
   border: "#242424",
@@ -42,7 +42,7 @@ async function loadFonts() {
 const SANS = "Geist";
 const MONO = "Geist Mono";
 
-/** A small security graph: nodes joined by edges, one of them ringed like the Helios mark. */
+/** A small security graph: nodes joined by edges, one of them ringed like the brand mark. */
 const NODES = [
   { id: "a", x: 24, y: 40 },
   { id: "b", x: 88, y: 18 },

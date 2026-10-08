@@ -19,14 +19,16 @@ export function SkillMatrix() {
       title="What I work with."
       intro="Grouped by domain, with no ratings. Open a group to see the depth behind it."
     >
-      <ul className="grid items-start gap-x-12 gap-y-16 sm:grid-cols-2 lg:grid-cols-3">
+      <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {groups.map((group) => (
-          <li key={group.id} className="border-t pt-6">
-            <h3 className="label-mono text-foreground">{group.title}</h3>
+          <li key={group.id} className="rounded-xl border bg-surface p-6">
+            <h3 className="label-mono text-accent-text">{group.title}</h3>
 
-            <ul className="mt-6 space-y-2 font-mono text-sm text-muted">
+            <ul className="mt-5 flex flex-wrap gap-2 font-mono text-xs text-foreground">
               {group.items.map((item) => (
-                <li key={item}>{item}</li>
+                <li key={item} className="rounded-md border bg-background px-2 py-1">
+                  {item}
+                </li>
               ))}
             </ul>
 

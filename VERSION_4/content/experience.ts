@@ -5,7 +5,8 @@ type ExperienceInput = z.input<typeof Experience>;
 
 /**
  * Source: docs/FACTS.md section A. Bullets are the owner's own, lightly edited for scanning without
- * changing meaning. Facilio has no bullets and no summary because nothing beyond the role is known.
+ * changing meaning. Facilio has no bullets: only the stack (Redis, Kafka, Apache) is known, plus what the
+ * company does, which is public. Nothing about what was built there is stated.
  * Dates are display strings. Facilio has a start only, because only the year is known.
  * The education entry has id "education" so pages can render it apart from the roles.
  */
@@ -20,7 +21,7 @@ export const experienceEntries: ExperienceInput[] = [
     summary:
       "Enterprise SOC and cyber defense. Previously titled Cybersecurity Analyst, SOC & Cyber Defense.",
     bullets: [
-      "Triage 100+ daily security alerts in an enterprise SOC and cyber defense environment, improving incident response efficiency and reducing alert backlog.",
+      "Triage daily security alerts in an enterprise SOC and cyber defense environment, improving incident response efficiency and reducing alert backlog.",
       "Manage the full incident lifecycle (detection, triage, containment, eradication, remediation) and perform root cause analysis for phishing, malware, account compromise and lateral movement.",
       "Map threats to MITRE ATT&CK. Design and optimize SIEM correlation rules to improve detection accuracy and reduce false positives.",
       "Build Python automation workflows. Apply AI-driven anomaly detection to improve alert prioritization and reduce noise.",
@@ -50,8 +51,10 @@ export const experienceEntries: ExperienceInput[] = [
     role: "Member of Technical Staff (Intern)",
     start: "2024",
     current: false,
+    summary:
+      "Facilio builds a connected CMMS: cloud software that uses IoT data and AI to run maintenance and operations across commercial buildings. Worked with Redis, Kafka and Apache.",
     bullets: [],
-    tags: [],
+    tags: ["Redis", "Kafka", "Apache"],
   },
   {
     id: "education",

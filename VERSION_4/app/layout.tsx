@@ -2,15 +2,12 @@ import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 import "@/components/hero/home-motion.css";
-import { CommandPalette } from "@/components/command/command-palette";
 import { GraphProvider } from "@/components/graph/graph-context";
-import { SecurityGraph } from "@/components/graph/security-graph";
 import { SiteFooter } from "@/components/navigation/site-footer";
 import { RouteFocus } from "@/components/navigation/route-focus";
 import { SiteHeader } from "@/components/navigation/site-header";
 import { JsonLd } from "@/components/seo/json-ld";
 import { TerminalDialog } from "@/components/terminal/terminal";
-import { buildSearchIndex } from "@/lib/search-index";
 import { INIT_SCRIPT } from "@/lib/preferences";
 import { personJsonLd, websiteJsonLd } from "@/lib/seo";
 import { site } from "@/lib/site";
@@ -88,15 +85,12 @@ export const viewport: Viewport = {
   // <meta name="theme-color"> cannot read CSS variables, so these mirror --background in
   // app/globals.css for the dark and light themes.
   themeColor: [
-    { media: "(prefers-color-scheme: dark)", color: "#090909" },
+    { media: "(prefers-color-scheme: dark)", color: "#0a0a0c" },
     { media: "(prefers-color-scheme: light)", color: "#f7f7f5" },
   ],
 };
 
-export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  // Built once at export time and handed to the client palette as plain data.
-  const searchItems = await buildSearchIndex();
-
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     // The inline init script rewrites data-theme / data-view before first paint from localStorage
     // and adds the "js" class, so the attributes can differ from the server HTML on purpose.
@@ -124,7 +118,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           Skip to content
         </a>
         <GraphProvider>
-          <SecurityGraph />
           <RouteFocus />
           <SiteHeader />
           {/* tabIndex -1 lets the skip link move focus here; it is not a tab stop and needs no ring. */}
@@ -132,7 +125,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             {children}
           </main>
           <SiteFooter />
-          <CommandPalette items={searchItems} />
           <TerminalDialog />
         </GraphProvider>
       </body>

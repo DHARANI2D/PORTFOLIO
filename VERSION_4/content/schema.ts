@@ -129,6 +129,8 @@ export const ResearchItem = z.object({
   slug: z.string().regex(/^[a-z0-9-]+$/),
   title: z.string(),
   tagline: z.string(),
+  /** A written-up paper, or a research direction that has no paper yet. Drives grouping on the home page. */
+  kind: z.enum(["paper", "direction"]).default("paper"),
   abstract: z.string(),
   /**
    * Meta description for search and social previews: one complete sentence, at most 160

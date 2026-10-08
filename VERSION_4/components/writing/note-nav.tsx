@@ -54,12 +54,12 @@ export function NoteNav({ previous, next }: { previous?: Neighbour; next?: Neigh
 
   return (
     <nav aria-labelledby="more-notes-heading" className="border-t">
-      <Container className="py-16 md:py-24">
+      <Container className="py-12 md:py-16">
         <div className="flex items-center justify-between gap-6 border-b pb-6">
           <Label>
             <span id="more-notes-heading">MORE FIELD NOTES</span>
           </Label>
-          <ButtonLink href="/writing/" variant="secondary" size="sm">
+          <ButtonLink href="/#writing" variant="secondary" size="sm">
             All notes
           </ButtonLink>
         </div>

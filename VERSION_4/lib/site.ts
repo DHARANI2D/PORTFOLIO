@@ -3,7 +3,11 @@ export const site = {
   name: "Dharanidharan Senthilkumar",
   shortName: "Dharani",
   handle: "DS",
-  brand: "DS / HELIOS",
+  brand: "DS / TRACE",
+  /** The wordmark after "DS /". An acronym: see brandMeaning. */
+  brandName: "TRACE",
+  /** What the letters stand for: the areas the work covers. */
+  brandMeaning: "Threat · Response · Automation · Cloud · Evidence",
   title: "Dharanidharan Senthilkumar — Security Engineer",
   description:
     "Security Engineer focused on detection engineering, SOC operations, cloud security, AI security, and autonomous security systems.",
@@ -16,6 +20,7 @@ export const site = {
   githubUser: "DHARANI2D",
   linkedin: "https://www.linkedin.com/in/dharanidharan-senthilkumar-b4244b232/",
   hashnode: "https://dharani2d.hashnode.dev/",
+  devto: "https://dev.to/dharani2d",
   resumeDownload:
     "https://drive.google.com/uc?export=download&id=1D60aoGGH331ehux7CgAmwazP0CVfHhEk",
   location: "India",
@@ -23,11 +28,16 @@ export const site = {
   builtOn: "2026",
 } as const;
 
-/** Primary navigation. Deliberately short: five items plus resume. */
+/**
+ * Primary navigation. The site is one page: each item scrolls to its section of the home page, in
+ * page order. Detail pages (a system, a research paper, a note) live under their section.
+ */
 export const primaryNav = [
-  { href: "/experience/", label: "WORK" },
-  { href: "/systems/", label: "SYSTEMS" },
-  { href: "/research/", label: "RESEARCH" },
-  { href: "/writing/", label: "WRITING" },
-  { href: "/about/", label: "ABOUT" },
+  { href: "/#about", label: "ABOUT" },
+  { href: "/#experience", label: "WORK" },
+  { href: "/#systems", label: "SYSTEMS" },
+  { href: "/#research", label: "RESEARCH" },
+  { href: "/#certifications", label: "CERTS" },
+  { href: "/#writing", label: "WRITING" },
+  { href: "/#contact", label: "CONTACT" },
 ] as const;

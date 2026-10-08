@@ -1,14 +1,6 @@
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import {
-  BOOT_LINES,
-  CHAR_MS,
-  LINE_PAUSE_MS,
-  START_DELAY_MS,
-  TOTAL_MS,
-  progressAt,
-} from "@/components/hero/boot-sequence";
 import { buildIdentity, shortOrg } from "@/components/hero/identity";
 import { getEarlierWork, getExperience } from "@/lib/content";
 import { site } from "@/lib/site";
@@ -38,34 +30,6 @@ describe("hero identity row", () => {
   it("shortens an organisation only when it carries a bracketed short form", () => {
     expect(shortOrg("Hewlett Packard Enterprise (HPE)")).toBe("HPE");
     expect(shortOrg("Facilio")).toBe("Facilio");
-  });
-});
-
-describe("boot console sequence", () => {
-  it("fits in 3 seconds in total", () => {
-    const chars = BOOT_LINES.reduce((sum, line) => sum + line.length, 0);
-    expect(TOTAL_MS).toBe(
-      START_DELAY_MS + chars * CHAR_MS + (BOOT_LINES.length - 1) * LINE_PAUSE_MS,
-    );
-    expect(TOTAL_MS).toBeLessThanOrEqual(3000);
-  });
-
-  it("starts empty, never goes backwards and ends on null", () => {
-    expect(progressAt(0)).toEqual({ line: 0, chars: 0 });
-    let last = { line: 0, chars: 0 };
-    for (let t = 0; t < TOTAL_MS; t += 7) {
-      const now = progressAt(t);
-      expect(now).not.toBeNull();
-      if (!now) continue;
-      const lineText = BOOT_LINES[now.line] ?? "";
-      expect(now.chars).toBeGreaterThanOrEqual(0);
-      expect(now.chars).toBeLessThanOrEqual(lineText.length);
-      expect(now.line * 1000 + now.chars).toBeGreaterThanOrEqual(last.line * 1000 + last.chars);
-      last = now;
-    }
-    expect(last.line).toBe(BOOT_LINES.length - 1);
-    expect(progressAt(TOTAL_MS)).toBeNull();
-    expect(progressAt(TOTAL_MS + 10_000)).toBeNull();
   });
 });
 

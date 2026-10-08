@@ -32,7 +32,7 @@ export function CaseSection({
       id={id}
       aria-labelledby={headingId}
       data-engineer-only={engineerOnly ? "" : undefined}
-      className="border-t py-16 md:py-24"
+      className="border-t py-12 md:py-16"
     >
       <Container>
         <Label className="block">

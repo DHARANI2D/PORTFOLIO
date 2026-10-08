@@ -27,3 +27,90 @@
 # block it. The export is already optimised, so post-processing stays off.
 [build.processing]
   skip_processing = true
+
+# The site is one page: the old list pages now live as sections of the home page. The detail
+# pages (/systems/<name>/, /research/<name>/, /writing/<name>/) are unchanged.
+[[redirects]]
+  from = "/about"
+  to = "/#about"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/about/"
+  to = "/#about"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/experience"
+  to = "/#experience"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/experience/"
+  to = "/#experience"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/systems"
+  to = "/#systems"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/systems/"
+  to = "/#systems"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/research"
+  to = "/#research"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/research/"
+  to = "/#research"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/writing"
+  to = "/#writing"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/writing/"
+  to = "/#writing"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/certifications"
+  to = "/#certifications"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/certifications/"
+  to = "/#certifications"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/contact"
+  to = "/#contact"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/contact/"
+  to = "/#contact"
+  status = 301
+  force = true
+

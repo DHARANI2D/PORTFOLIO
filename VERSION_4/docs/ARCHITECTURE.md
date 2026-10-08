@@ -34,7 +34,7 @@ Consequences that shape the code:
 
 `trailingSlash: true` makes every page `dir/index.html`, so URLs end in `/` and any static host serves them without rewrites. Canonical URLs, the sitemap and the navigation all use the trailing-slash form.
 
-`app/layout.tsx` is the one shared shell: the theme init script and JSON-LD in `<head>`, a skip link, then inside `GraphProvider` the `SecurityGraph`, `SiteHeader`, `<main id="main" tabIndex={-1}>`, `SiteFooter`, `CommandPalette` and `TerminalDialog`. It awaits `buildSearchIndex()` once and passes the result to the palette as plain data.
+`app/layout.tsx` is the one shared shell: the theme init script and JSON-LD in `<head>`, a skip link, then inside `GraphProvider` the `SecurityGraph`, `SiteHeader`, `<main id="main" tabIndex={-1}>`, `SiteFooter` and `TerminalDialog`.
 
 ## Content flow
 
@@ -46,7 +46,7 @@ lib/content.ts   getProjects(), getResearch(), getExperience(), getSkills(),
                  getCertifications(), getEarlierWork(), getMetrics()
         |
         +--> server components (pages, home sections)
-        +--> lib/search-index.ts  -> layout -> <CommandPalette items=...>   (plain data to the client)
+        +--> lib/knowledge.ts  -> app/knowledge.json/route.ts -> out/knowledge.json  (fetched on the first question)
         +--> components/terminal/terminal-context.ts  -> dynamic import on first terminal open
 
 content/writing/*.mdx   export const meta = {...} + MDX body
@@ -60,8 +60,8 @@ Rules that keep this honest:
 - **Pages read content only through `lib/content.ts`.** A schema violation throws during `next build`.
 - **Numbers are derived.** `getMetrics()` counts the content; the home panel, the terminal's `status` and the tests all read it. Nothing types a count.
 - **Facts come from `docs/FACTS.md`.** Content files cite it in their header comments. Inferred case-study text (threat models, decisions) is listed in `CONTENT_REVIEW.md` for the owner to confirm.
-- **The terminal and the palette are not special.** Both are views over the same accessors.
-- `lib/search-index.ts` is split into pure functions (`composeSearchItems`, `findMentions`) and one server-only wrapper (`buildSearchIndex`) that reads the MDX sources, so the pure part is unit-tested.
+- **The terminal and the assistant are not special.** Both are views over the same accessors.
+- `lib/assistant.ts` is pure (it ranks documents and picks sentences, with no DOM and no network); `lib/knowledge.ts` is the server-only builder of those documents, so the pure part is unit-tested.
 
 ### Home composition
 
@@ -78,10 +78,10 @@ Server components are the default. `"use client"` appears only on small interact
 | `navigation/site-header`, `mobile-menu`       | Active link from the pathname, sheet state                              |
 | `navigation/theme-toggle`, `view-toggle`      | Write `data-theme` / `data-view`, read them with `useSyncExternalStore` |
 | `ui/dialog`                                   | Base UI dialog (focus trap, restore, Esc)                               |
-| `command/command-palette`                     | Global keyboard shortcuts, search, router navigation                    |
+| `terminal/terminal-surface`                   | The terminal and assistant: commands, questions, history                |
 | `terminal/terminal`                           | Input, history; loads its interpreter and data on first open            |
 | `graph/graph-context`, `graph/security-graph` | Activation store and the ambient SVG that subscribes to it              |
-| `hero/helios-core`, `boot-console`, `reveal`  | Hero animation and scroll reveal, both as enhancements                  |
+| `hero/trace-core`, `boot-console`, `reveal`  | Hero animation and scroll reveal, both as enhancements                  |
 | `skills/count-up`                             | Number count-up                                                         |
 | `systems/architecture-diagram`                | Interactive diagram: selection, signal flow                             |
 | `career/scroll-phase`, `writing/note-toc`     | Scroll-linked state                                                     |
@@ -103,7 +103,7 @@ Rules for these leaves: take serializable props from a server parent, render the
 
 The view switch never re-renders content, so it costs nothing and works with static HTML. The init script is the only inline executable script the site owns, so its hash is the one constant entry in every page's CSP.
 
-`lib/ui-events.ts` is a tiny window-event bus (`ds:open-palette`, `ds:open-terminal`) so the header, footer and palette can open overlays without prop drilling.
+`lib/ui-events.ts` is a tiny window-event bus (`ds:open-terminal`) so the header and the menu can open the terminal without prop drilling.
 
 ## Security graph and activation
 
@@ -155,8 +155,8 @@ Do not edit `out/` after post-build, and do not let the host rewrite it: the has
 
 ## Tests
 
-- `tests/unit` (Vitest): content integrity and claims, CSP and headers, `postbuild.mjs` end to end against fixture exports, the fuzzy matcher, the terminal interpreter, the search index and palette model, preferences and the init script, SEO helpers and JSON-LD escaping, the build-log selector, reading time, the sitemap, robots and manifest, the OG image render, and the e2e static server.
-- `tests/e2e` (Playwright): run against `out/` through `tests/e2e/static-server.mjs`, which applies `out/_headers` and serves each page's policy tag (minus `upgrade-insecure-requests` in both, which would rewrite same-origin requests on plain http; `--csp-header off` drops the header to test the tag alone). Routes are discovered from `out/sitemap.xml`. `fixtures.ts` exports a `test` that fails on any CSP violation (the DOM event and policy console errors). `tests/e2e/tsconfig.json` type-checks the specs as part of `pnpm typecheck`. `helpers.ts` waits for hydration by opening and closing the palette through its own idempotent event, because a key pressed before hydration is lost.
+- `tests/unit` (Vitest): content integrity and claims, CSP and headers, `postbuild.mjs` end to end against fixture exports, the fuzzy matcher, the terminal interpreter, the assistant, preferences and the init script, SEO helpers and JSON-LD escaping, the build-log selector, reading time, the sitemap, robots and manifest, the OG image render, and the e2e static server.
+- `tests/e2e` (Playwright): run against `out/` through `tests/e2e/static-server.mjs`, which applies `out/_headers` and serves each page's policy tag (minus `upgrade-insecure-requests` in both, which would rewrite same-origin requests on plain http; `--csp-header off` drops the header to test the tag alone). Routes are discovered from `out/sitemap.xml`. `fixtures.ts` exports a `test` that fails on any CSP violation (the DOM event and policy console errors). `tests/e2e/tsconfig.json` type-checks the specs as part of `pnpm typecheck`. `helpers.ts` waits for hydration by opening and closing the terminal through its own idempotent event, because an event dispatched before hydration is lost.
 
 ## Where to change what
 
@@ -165,6 +165,6 @@ Do not edit `out/` after post-build, and do not let the host rewrite it: the has
 | Add a system, research item, note | `content/` (see README)                                                                                                       |
 | Change identity, links, brand     | `lib/site.ts`                                                                                                                 |
 | Change the policy or headers      | `scripts/lib/csp.mjs`, then `docs/SECURITY.md`                                                                                |
-| Add a route                       | `app/<route>/page.tsx` with `buildMetadata`, then `app/sitemap.ts` and the palette's `NAVIGATE` list in `lib/search-index.ts` |
+| Add a route                       | `app/<route>/page.tsx` with `buildMetadata`, then `app/sitemap.ts` |
 | Store something in the browser    | Add a line to the storage table in `app/privacy/page.tsx` first                                                               |
 | Add an interactive element        | A new small `"use client"` leaf; keep the server HTML complete                                                                |

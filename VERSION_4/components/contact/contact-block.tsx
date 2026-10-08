@@ -38,6 +38,11 @@ export function linkedinHandle(url: string): string {
   return new URL(url).pathname.replace(/^\/+|\/+$/g, "").replace(/-[0-9a-f]{9}$/i, "");
 }
 
+/** "dharani2d" from the DEV profile URL. */
+function devtoHandle(url: string): string {
+  return new URL(url).pathname.replace(/^\/+|\/+$/g, "");
+}
+
 function contactLinks(): ContactLink[] {
   return [
     {
@@ -57,6 +62,12 @@ function contactLinks(): ContactLink[] {
       label: "GITHUB",
       value: site.githubUser,
       href: site.github,
+      external: true,
+    },
+    {
+      label: "DEV",
+      value: devtoHandle(site.devto),
+      href: site.devto,
       external: true,
     },
   ];
@@ -90,9 +101,9 @@ function ContactRow({ link }: { link: ContactLink }) {
 }
 
 /**
- * Reusable contact content: optional heading, availability, three link rows and an optional mailto: form.
+ * Reusable contact content: optional heading, availability, four link rows and an optional mailto: form.
  * No <Section> wrapper, so the home page and /contact can frame it differently.
- * Public information is kept to what the owner already lists: email, LinkedIn, GitHub. No phone number.
+ * Public information is kept to what the owner already lists: email, LinkedIn, GitHub, DEV. No phone number.
  */
 export function ContactBlock({
   showHeading = true,
@@ -104,7 +115,7 @@ export function ContactBlock({
     <div className={cn("grid gap-16 lg:grid-cols-12 lg:gap-x-8", className)}>
       {showHeading ? (
         <header className="lg:col-span-12">
-          <Heading className="max-w-[18ch] text-4xl headline md:text-6xl">
+          <Heading className="max-w-[18ch] text-3xl headline md:text-4xl">
             {contactCopy.heading}
           </Heading>
           <p className="mt-6 max-w-2xl text-lg text-muted">{contactCopy.intro}</p>

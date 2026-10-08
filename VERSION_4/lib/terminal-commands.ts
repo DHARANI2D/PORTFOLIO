@@ -59,13 +59,12 @@ export type TerminalContext = {
   certifications: readonly Pick<Certification, "name" | "status" | "year">[];
   metrics: TerminalMetrics;
   site: TerminalSite;
-  /** Current preferences, when the caller knows them. Lets `theme` and `view` toggle without an argument. */
+  /** Current preferences, when the caller knows them. Lets `theme` toggle without an argument. */
   theme?: "dark" | "light";
-  view?: "engineer" | "recruiter";
 };
 
 /** What the server hands to the client: the context minus the preferences, which are read at run time. */
-export type TerminalData = Omit<TerminalContext, "theme" | "view">;
+export type TerminalData = Omit<TerminalContext, "theme">;
 
 export type TerminalResult = {
   lines: string[];
@@ -73,7 +72,11 @@ export type TerminalResult = {
   /** Internal path to navigate to. Only ever built from known slugs or the fixed page table. */
   navigate?: string;
   theme?: "dark" | "light";
-  view?: "engineer" | "recruiter";
+  /**
+   * A question for the assistant (lib/assistant.ts). The UI answers it from the site's content and
+   * prints `lines` only if nothing matches, so `lines` is the fallback.
+   */
+  ask?: string;
 };
 
 type Handler = (args: string[], ctx: TerminalContext) => TerminalResult;
@@ -118,17 +121,17 @@ function echo(value: string): string {
 /** Fixed pages reachable with `open <name>`. A Map, so `open constructor` or `open __proto__` finds nothing. */
 const PAGES: ReadonlyMap<string, string> = new Map([
   ["home", "/"],
-  ["about", "/about/"],
-  ["experience", "/experience/"],
-  ["work", "/experience/"],
-  ["systems", "/systems/"],
-  ["projects", "/systems/"],
-  ["research", "/research/"],
-  ["writing", "/writing/"],
-  ["certifications", "/certifications/"],
-  ["certs", "/certifications/"],
+  ["about", "/#about"],
+  ["experience", "/#experience"],
+  ["work", "/#experience"],
+  ["systems", "/#systems"],
+  ["projects", "/#systems"],
+  ["research", "/#research"],
+  ["writing", "/#writing"],
+  ["certifications", "/#certifications"],
+  ["certs", "/#certifications"],
   ["resume", "/resume/"],
-  ["contact", "/contact/"],
+  ["contact", "/#contact"],
   ["privacy", "/privacy/"],
 ]);
 
@@ -281,7 +284,7 @@ function status(_args: string[], ctx: TerminalContext): TerminalResult {
       `earlier work ${metrics.earlierProjects}`,
     ].join(" / "),
   ];
-  if (ctx.theme && ctx.view) lines.push(`theme ${ctx.theme} / view ${ctx.view}`);
+  if (ctx.theme) lines.push(`theme ${ctx.theme}`);
   return { lines };
 }
 
@@ -298,22 +301,6 @@ function theme(args: string[], ctx: TerminalContext): TerminalResult {
     arg === undefined
       ? "Usage: theme dark|light"
       : `Unknown theme "${echo(arg)}". Use: theme dark|light`,
-  );
-}
-
-function view(args: string[], ctx: TerminalContext): TerminalResult {
-  const arg = args[0]?.toLowerCase();
-  if (arg === "engineer" || arg === "recruiter") {
-    return { lines: [`View set to ${arg}.`], view: arg };
-  }
-  if (arg === undefined && ctx.view) {
-    const next = ctx.view === "engineer" ? "recruiter" : "engineer";
-    return { lines: [`View set to ${next}.`], view: next };
-  }
-  return out(
-    arg === undefined
-      ? "Usage: view engineer|recruiter"
-      : `Unknown view "${echo(arg)}". Use: view engineer|recruiter`,
   );
 }
 
@@ -413,6 +400,16 @@ function matrix(_args: string[], ctx: TerminalContext): TerminalResult {
   return { lines: ["TECHNOLOGY DOMAINS", ...table(rows)] };
 }
 
+const NOT_FOUND_LINES = [
+  "I can only answer from what is on this site: systems, research, experience, certifications, writing and contact.",
+  'Type "help" for the list of commands.',
+];
+
+function ask(args: string[]): TerminalResult {
+  if (args.length === 0) return out("Usage: ask <question>");
+  return { lines: NOT_FOUND_LINES, ask: args.join(" ") };
+}
+
 function clear(): TerminalResult {
   return { lines: [], clear: true };
 }
@@ -453,7 +450,6 @@ const COMMANDS: readonly CommandDef[] = [
   { name: "resume", usage: "resume", summary: "resume page and PDF", aliases: ["cv"], run: resume },
   { name: "status", usage: "status", summary: "system overview", run: status },
   { name: "theme", usage: "theme [dark|light]", summary: "switch theme", run: theme },
-  { name: "view", usage: "view [engineer|recruiter]", summary: "switch view", run: view },
   {
     name: "open",
     usage: "open <slug>",
@@ -462,6 +458,7 @@ const COMMANDS: readonly CommandDef[] = [
     run: open,
   },
   { name: "matrix", usage: "matrix", summary: "technology domains", run: matrix },
+  { name: "ask", usage: "ask <question>", summary: "ask about this site", run: ask },
   { name: "clear", usage: "clear", summary: "clear the screen", aliases: ["cls"], run: clear },
 ];
 
@@ -471,6 +468,7 @@ function help(): TerminalResult {
       "COMMANDS",
       ...table(COMMANDS.map((c) => [c.usage, c.summary])),
       "",
+      "Or just type a question, such as: What do you work on?",
       "Up and down recall earlier commands. Ctrl+L clears. Esc closes.",
     ],
   };
@@ -505,14 +503,23 @@ export function runCommand(input: string, ctx: TerminalContext): TerminalResult 
   const [word = "", ...args] = trimmed.split(/\s+/);
   const def = LOOKUP.get(word.toLowerCase());
   if (!def) {
-    const lines = [`Command not found: ${echo(word)}`];
-    const hint = suggest(word);
-    lines.push(
-      hint
-        ? `Did you mean "${hint}"? Type "help" for all commands.`
-        : 'Type "help" for the list of commands.',
-    );
-    return { lines };
+    const question = args.length > 0;
+    const hint = question ? undefined : suggest(word);
+    // A single word that is one typo away from a command is a typo. Anything else is a question.
+    if (hint) {
+      return {
+        lines: [
+          `Command not found: ${echo(word)}`,
+          `Did you mean "${hint}"? Type "help" for all commands.`,
+        ],
+      };
+    }
+    return {
+      lines: question
+        ? NOT_FOUND_LINES
+        : [`Command not found: ${echo(word)}`, 'Type "help" for the list of commands.'],
+      ask: trimmed,
+    };
   }
   return def.run(args, ctx);
 }

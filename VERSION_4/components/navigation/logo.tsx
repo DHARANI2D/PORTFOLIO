@@ -2,7 +2,7 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { site } from "@/lib/site";
 
-type HeliosMarkProps = {
+type BrandMarkProps = {
   size?: number;
   className?: string;
   /** Supply a title to make the mark meaningful to assistive tech. Decorative (aria-hidden) by default. */
@@ -10,11 +10,11 @@ type HeliosMarkProps = {
 };
 
 /**
- * Helios glyph: a filled core (the signal), one thin ring (the boundary it is observed through)
+ * Brand glyph: a filled core (the signal), one thin ring (the boundary it is observed through)
  * and a short arc (a ray: observation becomes visibility). Geometric, one accent dot, no shield.
  * Core uses the accent token via a class so it follows the theme; the rest is currentColor.
  */
-export function HeliosMark({ size = 24, className, title }: HeliosMarkProps) {
+export function BrandMark({ size = 24, className, title }: BrandMarkProps) {
   return (
     <svg
       width={size}
@@ -44,7 +44,7 @@ type LogoProps = {
   onClick?: React.MouseEventHandler<HTMLAnchorElement>;
 };
 
-/** "DS / HELIOS" lockup. The accessible name keeps the visible text so voice control matches it. */
+/** "DS / TRACE" lockup. The accessible name keeps the visible text so voice control matches it. */
 export function Logo({ className, onClick }: LogoProps) {
   return (
     <Link
@@ -53,9 +53,9 @@ export function Logo({ className, onClick }: LogoProps) {
       aria-label={`${site.brand}, home`}
       className={cn("group/logo inline-flex min-h-11 items-center gap-3 rounded-md", className)}
     >
-      <HeliosMark className="text-foreground transition-transform duration-500 motion-safe:group-hover/logo:rotate-[30deg] motion-reduce:transition-none" />
+      <BrandMark className="text-foreground transition-transform duration-500 motion-safe:group-hover/logo:rotate-[30deg] motion-reduce:transition-none" />
       <span className="font-mono text-xs font-medium tracking-[0.18em] whitespace-nowrap text-foreground">
-        {site.handle} <span className="text-muted">/</span> HELIOS
+        {site.handle} <span className="text-muted">/</span> {site.brandName}
       </span>
     </Link>
   );

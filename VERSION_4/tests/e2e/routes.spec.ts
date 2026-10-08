@@ -8,7 +8,7 @@ const routes = sitemapPaths();
 
 test.describe("routes", () => {
   test("the sitemap lists the pages the site promises", () => {
-    for (const route of ["/", "/about/", "/experience/", "/systems/", "/research/", "/writing/"]) {
+    for (const route of ["/", "/resume/", "/privacy/", "/security/"]) {
       expect(routes, route).toContain(route);
     }
     expect(routes.some((route) => route.startsWith("/systems/") && route !== "/systems/")).toBe(
@@ -57,8 +57,8 @@ test.describe("routes", () => {
   });
 
   test("a directory address without the trailing slash ends on the page", async ({ page }) => {
-    const response = await page.goto("/systems", { waitUntil: "load" });
+    const response = await page.goto("/privacy", { waitUntil: "load" });
     expect(response?.status()).toBe(200);
-    await expect(page).toHaveURL(/\/systems\/$/);
+    await expect(page).toHaveURL(/\/privacy\/$/);
   });
 });

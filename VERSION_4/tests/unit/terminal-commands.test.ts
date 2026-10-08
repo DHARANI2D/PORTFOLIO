@@ -112,7 +112,6 @@ describe("runCommand basics", () => {
     const result = run("rm -rf /");
     expect(result.navigate).toBeUndefined();
     expect(result.theme).toBeUndefined();
-    expect(result.view).toBeUndefined();
     expect(result.clear).toBeUndefined();
   });
 
@@ -188,33 +187,30 @@ describe("status", () => {
 
   it("shows the current preferences only when the caller knows them", () => {
     expect(text(run("status"))).not.toContain("theme");
-    expect(text(run("status", { theme: "light", view: "recruiter" }))).toContain(
-      "theme light / view recruiter",
-    );
+    expect(text(run("status", { theme: "light" }))).toContain("theme light");
   });
 });
 
-describe("theme and view", () => {
-  it("sets an explicit theme or view", () => {
+describe("theme", () => {
+  it("sets an explicit theme", () => {
     expect(run("theme dark").theme).toBe("dark");
     expect(run("theme LIGHT").theme).toBe("light");
-    expect(run("view recruiter").view).toBe("recruiter");
-    expect(run("view engineer").view).toBe("engineer");
   });
 
   it("toggles when the context knows the current value", () => {
     expect(run("theme", { theme: "dark" }).theme).toBe("light");
     expect(run("theme", { theme: "light" }).theme).toBe("dark");
-    expect(run("view", { view: "engineer" }).view).toBe("recruiter");
   });
 
   it("explains usage instead of guessing", () => {
     const bare = run("theme");
     expect(bare.theme).toBeUndefined();
     expect(text(bare)).toContain("Usage: theme dark|light");
-    const bad = run("view sideways");
-    expect(bad.view).toBeUndefined();
-    expect(text(bad)).toContain('Unknown view "sideways"');
+    // The engineer/recruiter switch is gone, so `view recruiter` is just a question for the assistant.
+    const gone = run("view recruiter");
+    expect(gone.ask).toBe("view recruiter");
+    expect(gone.theme).toBeUndefined();
+    expect(gone.navigate).toBeUndefined();
   });
 });
 
@@ -236,9 +232,9 @@ describe("open", () => {
   });
 
   it("opens fixed pages", () => {
-    expect(run("open about").navigate).toBe("/about/");
-    expect(run("open work").navigate).toBe("/experience/");
-    expect(run("open certs").navigate).toBe("/certifications/");
+    expect(run("open about").navigate).toBe("/#about");
+    expect(run("open work").navigate).toBe("/#experience");
+    expect(run("open certs").navigate).toBe("/#certifications");
     expect(run("open home").navigate).toBe("/");
   });
 
@@ -310,12 +306,10 @@ describe("input that names a prototype member", () => {
       `open /research/${word}/`,
       `cd ${word}`,
       `theme ${word}`,
-      `view ${word}`,
     ]) {
       const result = run(input);
       expect(result.navigate, input).toBeUndefined();
       expect(result.theme, input).toBeUndefined();
-      expect(result.view, input).toBeUndefined();
       expect(Array.isArray(result.lines), input).toBe(true);
     }
   });
@@ -357,5 +351,42 @@ describe("what ships to the browser", () => {
     expect(runtime).toEqual(["@/lib/fuzzy"]);
     const fuzzy = fs.readFileSync(path.join(__dirname, "../../lib/fuzzy.ts"), "utf8");
     expect(fuzzy).not.toMatch(/^import\s/m);
+  });
+});
+
+describe("questions for the assistant", () => {
+  it("an unknown phrase is passed on as a question, with a fallback if nothing matches", () => {
+    const result = run("What do you work on?");
+    expect(result.ask).toBe("What do you work on?");
+    expect(text(result)).toContain("I can only answer from what is on this site");
+    expect(text(result)).toContain('Type "help"');
+  });
+
+  it("an unknown single word is a question too, with the old message as its fallback", () => {
+    const result = run("kafka");
+    expect(result.ask).toBe("kafka");
+    expect(text(result)).toContain("Command not found: kafka");
+  });
+
+  it("a typo of a command is a typo, not a question", () => {
+    const result = run("projcts");
+    expect(result.ask).toBeUndefined();
+    expect(text(result)).toContain('Did you mean "projects"?');
+  });
+
+  it("the ask command passes its words on, and explains its usage when empty", () => {
+    expect(run("ask what is HELIOS").ask).toBe("what is HELIOS");
+    expect(run("ask").ask).toBeUndefined();
+    expect(text(run("ask"))).toContain("Usage: ask <question>");
+  });
+
+  it("known commands never become questions", () => {
+    for (const command of ["help", "projects", "contact", "theme dark", "open helios"]) {
+      expect(run(command).ask, command).toBeUndefined();
+    }
+  });
+
+  it("help mentions that a question can be typed", () => {
+    expect(text(run("help"))).toContain("type a question");
   });
 });

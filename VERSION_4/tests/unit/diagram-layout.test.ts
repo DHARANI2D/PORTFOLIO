@@ -44,7 +44,7 @@ function labelCrossings(geo: Geometry): string[] {
 describe("architecture diagram geometry", () => {
   it("covers every project that has a diagram", () => {
     expect(diagrams.map((d) => d.slug)).toEqual(
-      expect.arrayContaining(["witness", "signalfusion-core", "aegis"]),
+      expect.arrayContaining(["witness", "signalfusion-core"]),
     );
   });
 

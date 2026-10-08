@@ -48,7 +48,7 @@ export function Section({
       id={id}
       aria-labelledby={title ? headingId : undefined}
       className={cn(
-        "border-t py-24 md:py-32",
+        "border-t py-12 md:py-16",
         // `ds-section` is the shared hook (app/globals.css may also style it). The increment is
         // repeated here so the numbers never depend on a stylesheet rule being present.
         autoNumber && "ds-section [counter-increment:ds-section]",
@@ -56,30 +56,36 @@ export function Section({
       )}
     >
       <Container>
-        <Label className="mb-8 block">
-          {autoNumber ? (
-            // The number is a CSS counter (::before), so it is not in the text content at all. The
-            // number and the slash are decorative; the label alone is what assistive tech reads.
-            <>
-              <span aria-hidden>
-                <span className="ds-section-number text-accent before:content-[counter(ds-section,decimal-leading-zero)]" />{" "}
-                /{" "}
-              </span>
-              {label}
-            </>
-          ) : (
-            <>
-              <span className="text-accent">{index}</span> / {label}
-            </>
-          )}
-        </Label>
-        {title ? (
-          <h2 id={headingId} className="max-w-[18ch] text-4xl headline md:text-6xl">
-            {title}
-          </h2>
-        ) : null}
-        {intro ? <p className="mt-6 max-w-2xl text-lg text-muted">{intro}</p> : null}
-        {children ? <div className={title || intro ? "mt-14" : ""}>{children}</div> : null}
+        <div className="grid gap-x-10 gap-y-4 lg:grid-cols-12 lg:items-end">
+          <div className="lg:col-span-7">
+            <Label className="mb-5 flex items-center gap-3 before:h-px before:w-8 before:bg-accent before:content-['']">
+              {autoNumber ? (
+                <>
+                  <span aria-hidden>
+                    <span className="ds-section-number text-accent before:content-[counter(ds-section,decimal-leading-zero)]" />{" "}
+                    /{" "}
+                  </span>
+                  {label}
+                </>
+              ) : (
+                <>
+                  <span className="text-accent">{index}</span> / {label}
+                </>
+              )}
+            </Label>
+            {title ? (
+              <h2 id={headingId} className="max-w-[20ch] text-3xl headline md:text-4xl">
+                {title}
+              </h2>
+            ) : null}
+          </div>
+          {intro ? (
+            <p className="max-w-xl text-base text-muted md:text-lg lg:col-span-5 lg:pb-1">
+              {intro}
+            </p>
+          ) : null}
+        </div>
+        {children ? <div className={title || intro ? "mt-10 md:mt-12" : ""}>{children}</div> : null}
       </Container>
     </section>
   );

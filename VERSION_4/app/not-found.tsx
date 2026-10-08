@@ -23,7 +23,7 @@ export default function NotFound() {
       <Label className="block">
         <span className="text-accent">404</span> / SIGNAL LOST
       </Label>
-      <h1 className="mt-6 max-w-[16ch] text-5xl display md:text-7xl">No page at this address.</h1>
+      <h1 className="mt-6 max-w-[16ch] text-4xl display md:text-5xl">No page at this address.</h1>
       <p className="mt-6 max-w-xl text-lg text-muted">
         The link may be old, or the address mistyped. There is no page here.
       </p>
@@ -46,7 +46,7 @@ export default function NotFound() {
         <ButtonLink href="/" variant="primary" arrow>
           Back to home
         </ButtonLink>
-        <ButtonLink href="/systems/" variant="secondary">
+        <ButtonLink href="/#systems" variant="secondary">
           View systems
         </ButtonLink>
       </div>

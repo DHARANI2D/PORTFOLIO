@@ -10,8 +10,15 @@ import { waitForHydration } from "./helpers";
  * tests/unit/diagram-layout.test.ts; these run against the built, hydrated pages.
  */
 
-const FLAGSHIPS = ["witness", "signalfusion-core", "aegis"] as const;
-const THIN = ["argus", "voltrix", "desas"] as const;
+const FLAGSHIPS = ["witness", "signalfusion-core"] as const;
+const THIN = [
+  "helios",
+  "desas",
+  "owl",
+  "securemodelgate",
+  "silentstorm",
+  "ml-incident-response",
+] as const;
 
 const figure = (page: Page) => page.locator("#architecture figure");
 const panel = (page: Page) => figure(page).locator('[aria-live="polite"]').first();
@@ -432,7 +439,7 @@ test.describe("signal pass under reduced motion (perf-5)", () => {
 
 test.describe("thin pages and the case-study wording (UX-06, D5)", () => {
   test("cards say OVERVIEW unless the system has an architecture diagram", async ({ page }) => {
-    await page.goto("/systems/");
+    await page.goto("/");
     for (const slug of [...FLAGSHIPS, ...THIN]) {
       const link = page.locator(`article h3 a[href="/systems/${slug}/"]`);
       const card = link.locator("xpath=ancestor::article");
@@ -445,8 +452,8 @@ test.describe("thin pages and the case-study wording (UX-06, D5)", () => {
   });
 
   test("the index does not promise a case study for every system", async ({ page }) => {
-    await page.goto("/systems/");
-    const intro = (await page.locator("#systems-heading + p").textContent()) ?? "";
+    await page.goto("/");
+    const intro = (await page.locator("#systems-heading").locator("xpath=../following-sibling::p").textContent()) ?? "";
     expect(intro).not.toMatch(/each one has a case study/i);
     expect(intro).toMatch(/architecture diagram/i);
     expect(intro).toMatch(/overview/i);
@@ -493,7 +500,7 @@ test.describe("thin pages and the case-study wording (UX-06, D5)", () => {
   }
 
   test("the category is left out when it only repeats the domain", async ({ page }) => {
-    await page.goto("/systems/argus/");
+    await page.goto("/systems/owl/");
     await expect(page.locator("header dl")).not.toContainText("CATEGORY");
     await expect(page.locator("header dl")).toContainText("DOMAIN");
     await page.goto("/systems/desas/");
@@ -524,9 +531,7 @@ test.describe("onward links (UX-07)", () => {
       "/writing/deterministic-evidence-gate-for-remediation/",
     ],
     "signalfusion-core": ["/writing/siem-alerts-to-correlated-investigations/"],
-    aegis: ["/research/securemodelgate/", "/writing/evidence-boundaries-for-autonomous-security/"],
-    argus: ["/research/ai-dfir/"],
-    voltrix: ["/research/ai-dfir/"],
+    helios: ["/research/ai-dfir/"],
   };
 
   for (const [slug, hrefs] of Object.entries(EXPECTED)) {
@@ -552,17 +557,14 @@ test.describe("onward links (UX-07)", () => {
     await expect(page.locator("#related")).toHaveCount(0);
   });
 
-  test("RELATED is engineer-view only and is reachable from the page's own jump links", async ({
+  test("RELATED is reachable from the page's own jump links", async ({
     page,
   }) => {
     await page.goto("/systems/witness/");
     await expect(
       page.locator('nav[aria-label="Case study sections"] a[href="#related"]'),
     ).toBeVisible();
-    await page.evaluate(() => localStorage.setItem("ds-view", "recruiter"));
-    await page.reload();
-    await expect(page.locator("#related")).toBeHidden();
-    await page.evaluate(() => localStorage.removeItem("ds-view"));
+    await expect(page.locator("#related")).toBeVisible();
   });
 });
 
@@ -630,7 +632,7 @@ test.describe("axe on the reshaped systems pages", () => {
     { slug: "witness", width: 1024, height: 768 },
     { slug: "witness", width: 390, height: 844 },
     { slug: "signalfusion-core", width: 1440, height: 900 },
-    { slug: "argus", width: 1440, height: 900 },
+    { slug: "helios", width: 1440, height: 900 },
     { slug: "desas", width: 390, height: 844 },
   ];
 

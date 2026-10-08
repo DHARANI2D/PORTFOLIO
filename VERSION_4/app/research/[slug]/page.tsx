@@ -83,7 +83,7 @@ export default async function ResearchPage({ params }: PageProps) {
           <Container className="pt-6 pb-16 md:pt-8 md:pb-24">
             <nav aria-label="Breadcrumb">
               <Link
-                href="/research/"
+                href="/#research"
                 className="group/back -ml-2 inline-flex min-h-11 items-center gap-2 px-2 label-mono text-muted transition-colors duration-200 hover:text-foreground motion-reduce:transition-none"
               >
                 <ArrowLeft
@@ -100,7 +100,7 @@ export default async function ResearchPage({ params }: PageProps) {
               </Label>
               <h1
                 id="research-title"
-                className="mt-6 text-3xl display break-words xs:text-5xl md:text-7xl xl:text-8xl"
+                className="mt-6 text-3xl display break-words xs:text-4xl md:text-5xl xl:text-6xl"
               >
                 {item.title}
               </h1>

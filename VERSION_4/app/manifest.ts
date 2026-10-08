@@ -4,7 +4,7 @@ import { site } from "@/lib/site";
 export const dynamic = "force-static";
 
 // The manifest cannot read CSS variables, so these mirror --background in app/globals.css (dark).
-const BACKGROUND = "#090909";
+const BACKGROUND = "#0a0a0c";
 
 /**
  * Web app manifest. The site is a document, not an installable app, so `display` stays "browser":

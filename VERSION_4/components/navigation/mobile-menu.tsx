@@ -3,16 +3,16 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ArrowRight, Menu, Search, Terminal, X } from "lucide-react";
+import { ArrowRight, Menu, Terminal, X } from "lucide-react";
 import { Button, ButtonLink, buttonVariants } from "@/components/ui/button";
 import { Dialog, DialogClose } from "@/components/ui/dialog";
 import { Container } from "@/components/ui/container";
 import { Label } from "@/components/ui/label";
 import { AvailabilityStatus, Logo } from "@/components/navigation/logo";
+import { useActiveNav } from "@/components/navigation/use-active-nav";
 import { ThemeToggle } from "@/components/navigation/theme-toggle";
-import { ViewToggle } from "@/components/navigation/view-toggle";
 import { primaryNav } from "@/lib/site";
-import { openCommandPalette, openTerminal } from "@/lib/ui-events";
+import { openTerminal } from "@/lib/ui-events";
 import { cn } from "@/lib/utils";
 
 /** "page" = this exact route, "section" = a child route of it (e.g. /systems/witness/), null = elsewhere. */
@@ -60,6 +60,7 @@ function runWhenDialogsGone(action: () => void) {
  */
 export function MobileMenu() {
   const pathname = usePathname();
+  const active = useActiveNav();
   // Open state is tied to the route it was opened on, so any navigation (including browser
   // back/forward) closes the sheet without an effect.
   const [openedFor, setOpenedFor] = useState<string | null>(null);
@@ -157,13 +158,13 @@ export function MobileMenu() {
           <nav aria-label="Primary" className="mt-8">
             <ul className="border-t">
               {primaryNav.map((item, index) => {
-                const state = getNavState(pathname, item.href);
+                const state = active === item.href;
                 return (
                   <li key={item.href} className="border-b">
                     <Link
                       href={item.href}
                       onClick={closeOnPlainClick}
-                      aria-current={state === "page" ? "page" : state ? "true" : undefined}
+                      aria-current={state ? "true" : undefined}
                       className={cn(
                         "flex min-h-16 items-center justify-between gap-4 py-3 transition-colors duration-200 motion-reduce:transition-none",
                         state ? "text-accent" : "text-foreground hover:text-accent",
@@ -195,27 +196,9 @@ export function MobileMenu() {
             Resume
           </ButtonLink>
 
-          {/* Not in the primary nav; reachable here so it is one tap away in either view. */}
-          <Link
-            href="/certifications/"
-            onClick={closeOnPlainClick}
-            className="mt-2 inline-flex min-h-11 items-center self-start label-mono text-muted transition-colors duration-200 hover:text-foreground motion-reduce:transition-none"
-          >
-            Certifications
-          </Link>
-
           <div className="mt-8 flex flex-col gap-4">
-            <ViewToggle stretch />
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <ThemeToggle withLabel className="w-full" />
-              <Button
-                variant="secondary"
-                className="w-full"
-                onClick={() => closeMenuThenOpen(openCommandPalette)}
-              >
-                <Search aria-hidden className="size-4" />
-                Search
-              </Button>
               <Button
                 variant="secondary"
                 className="w-full"

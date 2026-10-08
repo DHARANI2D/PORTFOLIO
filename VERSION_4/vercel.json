@@ -62,5 +62,77 @@
         }
       ]
     }
+  ],
+  "redirects": [
+    {
+      "source": "/about",
+      "destination": "/#about",
+      "permanent": true
+    },
+    {
+      "source": "/experience",
+      "destination": "/#experience",
+      "permanent": true
+    },
+    {
+      "source": "/systems",
+      "destination": "/#systems",
+      "permanent": true
+    },
+    {
+      "source": "/research",
+      "destination": "/#research",
+      "permanent": true
+    },
+    {
+      "source": "/writing",
+      "destination": "/#writing",
+      "permanent": true
+    },
+    {
+      "source": "/certifications",
+      "destination": "/#certifications",
+      "permanent": true
+    },
+    {
+      "source": "/contact",
+      "destination": "/#contact",
+      "permanent": true
+    },
+    {
+      "source": "/about/",
+      "destination": "/#about",
+      "permanent": true
+    },
+    {
+      "source": "/experience/",
+      "destination": "/#experience",
+      "permanent": true
+    },
+    {
+      "source": "/systems/",
+      "destination": "/#systems",
+      "permanent": true
+    },
+    {
+      "source": "/research/",
+      "destination": "/#research",
+      "permanent": true
+    },
+    {
+      "source": "/writing/",
+      "destination": "/#writing",
+      "permanent": true
+    },
+    {
+      "source": "/certifications/",
+      "destination": "/#certifications",
+      "permanent": true
+    },
+    {
+      "source": "/contact/",
+      "destination": "/#contact",
+      "permanent": true
+    }
   ]
 }

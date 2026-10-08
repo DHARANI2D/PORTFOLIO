@@ -30,7 +30,7 @@ export function ResearchBlock({
       id={id}
       aria-labelledby={headingId}
       data-engineer-only={engineerOnly ? "" : undefined}
-      className="border-t py-16 md:py-24"
+      className="border-t py-12 md:py-16"
     >
       <Container>
         <div className="grid gap-8 lg:grid-cols-12 lg:gap-x-6">

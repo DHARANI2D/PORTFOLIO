@@ -48,7 +48,7 @@ const NODES: readonly OperatingNode[] = [
     col: 1,
     row: 2,
   },
-  { id: "agents", name: "Agents", detail: "WITNESS · AEGIS", col: 2, row: 2 },
+  { id: "agents", name: "Agents", detail: "WITNESS · HELIOS", col: 2, row: 2 },
 ];
 
 /** Undirected. Each pair shares a row (a horizontal link) or a column (a vertical link). */

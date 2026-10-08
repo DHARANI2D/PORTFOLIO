@@ -24,7 +24,7 @@ function metaLine(cert: Certification): string {
 export function GroupHeading({ id, label, count }: { id: string; label: string; count: number }) {
   return (
     <div className="flex items-baseline justify-between gap-6 border-b pb-4">
-      <h2 id={id} className="label-mono text-foreground">
+      <h2 id={id} className="subhead text-foreground md:text-xl">
         {label}
       </h2>
       <span className="label-mono text-muted">
@@ -38,7 +38,7 @@ function VerifiedRow({ cert }: { cert: Certification }) {
   const meta = metaLine(cert);
 
   return (
-    <li className="grid grid-cols-[0.5rem_minmax(0,1fr)] gap-x-3 gap-y-3 border-b py-6 md:grid-cols-[0.5rem_minmax(0,1fr)_auto] md:items-center">
+    <li className="grid grid-cols-[0.5rem_minmax(0,1fr)] gap-x-3 gap-y-3 border-b px-6 py-5 last:border-b-0 md:grid-cols-[0.5rem_minmax(0,1fr)_auto] md:items-center">
       {/* Filled marker: earned. The group heading says EARNED, so no extra text is needed. */}
       <span
         aria-hidden
@@ -85,7 +85,7 @@ export function VerifiedCertifications({
   labelledBy: string;
 }) {
   return (
-    <ul aria-labelledby={labelledBy}>
+    <ul aria-labelledby={labelledBy} className="overflow-hidden rounded-xl border bg-surface">
       {items.map((cert) => (
         <VerifiedRow key={cert.name} cert={cert} />
       ))}
@@ -101,7 +101,7 @@ const STATUS_LABEL: Record<Certification["status"], string> = {
 
 function NextRow({ cert }: { cert: Certification }) {
   return (
-    <li className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3 border-b border-dashed py-6">
+    <li className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3 border-b border-dashed px-6 py-5 last:border-b-0">
       <div className="flex items-start gap-3">
         {/* Hollow marker: not earned. The PLANNED / IN PROGRESS tag says it in text as well. */}
         <span
@@ -127,7 +127,7 @@ export function NextCertifications({
   labelledBy: string;
 }) {
   return (
-    <ul aria-labelledby={labelledBy}>
+    <ul aria-labelledby={labelledBy} className="overflow-hidden rounded-xl border bg-surface">
       {items.map((cert) => (
         <NextRow key={cert.name} cert={cert} />
       ))}

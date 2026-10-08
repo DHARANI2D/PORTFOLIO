@@ -21,23 +21,11 @@ const LEAD =
 const LAST_UPDATED = { iso: "2026-10-04", text: "4 October 2026" } as const;
 
 /**
- * Everything this site writes to browser storage. Keep in sync with lib/preferences.ts (theme,
- * view), components/command/shortcut-preference.ts and components/hero/boot-console.tsx. If a new
- * key is added anywhere, it must be listed here.
+ * Everything this site writes to browser storage. Keep in sync with lib/preferences.ts (theme).
+ * If a new key is added anywhere, it must be listed here.
  */
 const STORED = [
   { key: "ds-theme", where: "localStorage", what: "Your theme choice, dark or light." },
-  { key: "ds-view", where: "localStorage", what: "Your view choice, engineer or recruiter." },
-  {
-    key: "ds-shortcuts",
-    where: "localStorage",
-    what: "Whether the single-key go-to keyboard shortcuts are on.",
-  },
-  {
-    key: "ds-boot-typed",
-    where: "localStorage",
-    what: "A flag so the home page intro plays once per browser, on your first visit only.",
-  },
 ] as const;
 
 const linkClass =

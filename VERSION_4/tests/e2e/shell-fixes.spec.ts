@@ -60,7 +60,6 @@ async function seedTheme(page: Page, theme: Theme) {
   );
 }
 
-const PALETTE = { name: "Command palette" } as const;
 
 test.describe("route changes (A11Y-1)", () => {
   // Smooth scrolling is on only when motion is allowed, which is where the bug was.
@@ -100,32 +99,36 @@ test.describe("route changes (A11Y-1)", () => {
   }
 
   for (const originScroll of [0, 200, 300]) {
-    test(`a nav link from /about/ scrolled to ${originScroll}px lands at the top with focus in main`, async ({
+    test(`a nav link from /privacy/ scrolled to ${originScroll}px lands on its section`, async ({
       page,
       isMobile,
     }) => {
-      await page.goto("/about/");
+      await page.goto("/privacy/");
       await waitForHydration(page);
       await page.evaluate((y) => window.scrollTo({ top: y, behavior: "instant" }), originScroll);
       await goViaPrimaryNav(page, isMobile, "Systems");
-      await expect(page).toHaveURL(/\/systems\/$/);
-      await expectNewPageAtTop(page);
+      await expect(page).toHaveURL(/\/#systems$/);
+      await expect(page.locator("#systems")).toBeInViewport();
     });
   }
 
-  test("a go-to key sequence lands at the top as well", async ({ page }) => {
-    await page.goto("/about/");
+  test("a link to another page lands at its top with focus in main", async ({ page }) => {
+    await page.goto("/");
     await waitForHydration(page);
-    await page.keyboard.press("g");
-    await page.keyboard.press("r");
-    await expect(page).toHaveURL(/\/research\/$/);
+    await page.evaluate(() => window.scrollTo({ top: 600, behavior: "instant" }));
+    const link = page
+      .getByRole("navigation", { name: "Footer links" })
+      .getByRole("link", { name: "Privacy", exact: true });
+    await link.scrollIntoViewIfNeeded();
+    await link.click();
+    await expect(page).toHaveURL(/\/privacy\/$/);
     await expectNewPageAtTop(page);
   });
 
   test("a route change that carries a #hash still lands on its target, not at the top", async ({
     page,
   }) => {
-    await page.goto("/about/");
+    await page.goto("/privacy/");
     await waitForHydration(page);
     await page.evaluate(() => {
       (
@@ -144,14 +147,14 @@ test.describe("route changes (A11Y-1)", () => {
   });
 
   test("the first load does not move focus into main", async ({ page }) => {
-    await page.goto("/about/");
+    await page.goto("/privacy/");
     await waitForHydration(page);
     await page.waitForTimeout(300);
     await expect(page.locator("main#main")).not.toBeFocused();
   });
 
   test("the router sets scroll-behavior to auto only while it changes route", async ({ page }) => {
-    await page.goto("/about/");
+    await page.goto("/privacy/");
     await expect(page.locator("html")).toHaveAttribute("data-scroll-behavior", "smooth");
     // In-page anchors keep the smooth scrolling the stylesheet asks for.
     expect(await css(page.locator("html"), "scroll-behavior")).toBe("smooth");
@@ -166,7 +169,7 @@ test.describe("skip link contrast (A11Y-3)", () => {
     }) => {
       test.skip(isMobile, "a keyboard is needed to focus the skip link");
       await seedTheme(page, theme);
-      await page.goto("/about/");
+      await page.goto("/privacy/");
       await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
       await page.keyboard.press("Tab");
       const skip = page.getByRole("link", { name: "Skip to content" });
@@ -196,7 +199,7 @@ test.describe("finite animation (A11Y-4)", () => {
     isMobile,
   }) => {
     test.skip(isMobile, "the status line is in the header at xl only");
-    await page.goto("/about/");
+    await page.goto("/privacy/");
     const timings = () =>
       page.evaluate(() =>
         document
@@ -240,34 +243,8 @@ test.describe("forced colours (A11Y-5)", () => {
     test.skip(isMobile, "the header controls are desktop only; the sheet prints Current in text");
   });
 
-  test("the selected VIEW AS option is drawn differently from the other one", async ({ page }) => {
-    await page.goto("/systems/");
-    await waitForHydration(page);
-    const group = page.getByRole("group", { name: "VIEW AS" });
-    const engineer = group.getByRole("button", { name: "ENGINEER" });
-    const recruiter = group.getByRole("button", { name: "RECRUITER" });
-    await expect(engineer).toHaveAttribute("aria-pressed", "true");
-
-    const look = async (button: Locator) => ({
-      background: await css(button, "background-color"),
-      color: await css(button, "color"),
-    });
-    const selected = await look(engineer);
-    const other = await look(recruiter);
-    expect(selected.background).not.toBe(other.background);
-    // Text stays readable on its own fill.
-    expect(
-      contrast(parseColor(selected.color), parseColor(selected.background)),
-    ).toBeGreaterThanOrEqual(4.5);
-
-    await recruiter.click();
-    await expect(recruiter).toHaveAttribute("aria-pressed", "true");
-    expect(await look(recruiter)).toEqual(selected);
-    expect((await look(engineer)).background).toBe(other.background);
-  });
-
   test("the pressed theme toggle changes its fill", async ({ page }) => {
-    await page.goto("/systems/");
+    await page.goto("/");
     await waitForHydration(page);
     const toggle = page.getByRole("button", { name: "Toggle theme" });
     const before = await css(toggle, "background-color");
@@ -276,12 +253,12 @@ test.describe("forced colours (A11Y-5)", () => {
     expect(await css(toggle, "background-color")).not.toBe(before);
   });
 
-  test("the current page keeps a visible mark in the nav", async ({ page }) => {
-    await page.goto("/systems/");
+  test("the current section keeps a visible mark in the nav", async ({ page }) => {
+    await page.goto("/systems/witness/");
     const link = page
       .getByRole("navigation", { name: "Primary" })
       .getByRole("link", { name: "SYSTEMS" });
-    await expect(link).toHaveAttribute("aria-current", "page");
+    await expect(link).toHaveAttribute("aria-current", "true");
     const mark = link.locator("[aria-hidden]");
     await expect(mark).toHaveCSS("border-bottom-width", "1px");
     // Backgrounds are dropped in this mode, so the mark must be a border with a real colour.
@@ -290,7 +267,7 @@ test.describe("forced colours (A11Y-5)", () => {
   });
 
   test("focus rings stay solid and 2px wide", async ({ page }) => {
-    await page.goto("/systems/");
+    await page.goto("/");
     await page.keyboard.press("Tab"); // skip link
     await page.keyboard.press("Tab"); // logo
     const focused = page.locator(":focus");
@@ -299,7 +276,7 @@ test.describe("forced colours (A11Y-5)", () => {
   });
 
   test("the skip link has a border and the status dot a fill", async ({ page }) => {
-    await page.goto("/systems/");
+    await page.goto("/");
     await expect(page.locator(".skip-link")).toHaveCSS("border-top-width", "2px");
     const dot = page.locator("header .status-dot").first();
     await expect(dot).toBeAttached();
@@ -334,7 +311,7 @@ test.describe("header layout and the VIEW AS label (D9, UX-12)", () => {
   for (const width of [1024, 1100, 1279, 1280, 1366, 1440]) {
     test(`at ${width}px the header row fits with room between its parts`, async ({ page }) => {
       await page.setViewportSize({ width, height: 800 });
-      await page.goto("/systems/");
+      await page.goto("/");
       const row = await page.evaluate(() => {
         const container = document.querySelector("header")?.firstElementChild as HTMLElement;
         const parts = [...container.children]
@@ -359,29 +336,12 @@ test.describe("header layout and the VIEW AS label (D9, UX-12)", () => {
     });
   }
 
-  test("VIEW AS is spelled out from xl and still names the group below it", async ({ page }) => {
-    const visibleWidth = (locator: Locator) =>
-      locator.evaluate((el) => el.getBoundingClientRect().width);
-
-    await page.setViewportSize({ width: 1280, height: 800 });
-    await page.goto("/about/");
-    const group = page.getByRole("group", { name: "VIEW AS" });
-    await expect(group).toBeVisible();
-    const label = group.getByText("VIEW AS", { exact: true });
-    expect(await visibleWidth(label)).toBeGreaterThan(30);
-    expect(await css(label, "font-family")).toMatch(/mono/i);
-
-    await page.setViewportSize({ width: 1100, height: 800 });
-    await expect(page.getByRole("group", { name: "VIEW AS" })).toBeVisible();
-    expect(await visibleWidth(group.getByText("VIEW AS", { exact: true }))).toBeLessThan(5);
-  });
-
   test("availability shows in the header at xl and in the footer at every width", async ({
     page,
   }) => {
     for (const width of [320, 768, 1024, 1279, 1280, 1440]) {
       await page.setViewportSize({ width, height: 800 });
-      await page.goto("/about/");
+      await page.goto("/privacy/");
       const footerLine = page.locator("footer").getByText("AVAILABLE FOR SECURITY ENGINEERING");
       await footerLine.scrollIntoViewIfNeeded();
       await expect(footerLine, `footer at ${width}`).toBeVisible();
@@ -400,11 +360,11 @@ test.describe("header layout and the VIEW AS label (D9, UX-12)", () => {
 });
 
 test.describe("the open menu at 320px", () => {
-  test("nothing sticks out, availability line and Certifications link included", async ({
+  test("nothing sticks out, availability line and last nav link included", async ({
     page,
   }) => {
     await page.setViewportSize({ width: 320, height: 640 });
-    await page.goto("/about/");
+    await page.goto("/privacy/");
     await waitForHydration(page);
     await page.getByRole("button", { name: "Menu", exact: true }).click();
     const sheet = page.getByRole("dialog", { name: "Menu" });
@@ -413,7 +373,7 @@ test.describe("the open menu at 320px", () => {
     expect(size.scroll).toBeLessThanOrEqual(size.client);
     for (const target of [
       sheet.getByText("AVAILABLE FOR SECURITY ENGINEERING"),
-      sheet.getByRole("link", { name: "Certifications", exact: true }),
+      sheet.getByRole("link", { name: "Contact", exact: true }),
     ]) {
       await target.scrollIntoViewIfNeeded();
       const box = await target.boundingBox();
@@ -424,16 +384,15 @@ test.describe("the open menu at 320px", () => {
 });
 
 test.describe("footer links (UX-08)", () => {
-  for (const route of ["/", "/about/", "/systems/"]) {
+  for (const route of ["/", "/privacy/", "/systems/witness/"]) {
     test(`${route} links to certifications, security and privacy in the default view`, async ({
       page,
     }) => {
       await page.goto(route);
-      await expect(page.locator("html")).toHaveAttribute("data-view", "engineer");
       const nav = page.getByRole("navigation", { name: "Footer links" });
       await nav.scrollIntoViewIfNeeded();
       for (const [name, href] of [
-        ["Certifications", "/certifications/"],
+        ["Certifications", "/#certifications"],
         ["Security", "/security/"],
         ["Privacy", "/privacy/"],
         ["security.txt", "/.well-known/security.txt"],
@@ -446,30 +405,31 @@ test.describe("footer links (UX-08)", () => {
     });
   }
 
-  test("the Certifications footer link opens the certifications page", async ({ page }) => {
-    await page.goto("/about/");
+  test("the Certifications footer link scrolls to the certifications section", async ({ page }) => {
+    await page.goto("/privacy/");
     await waitForHydration(page);
     const link = page
       .getByRole("navigation", { name: "Footer links" })
       .getByRole("link", { name: "Certifications", exact: true });
     await link.scrollIntoViewIfNeeded();
     await link.click();
-    await expect(page).toHaveURL(/\/certifications\/$/);
+    await expect(page).toHaveURL(/\/#certifications$/);
+    await expect(page.locator("#certifications")).toBeInViewport();
   });
 
   test("the menu sheet also links to certifications", async ({ page, isMobile }) => {
     test.skip(!isMobile, "the sheet is the mobile navigation");
-    await page.goto("/about/");
+    await page.goto("/privacy/");
     await waitForHydration(page);
     await openMenuIfPresent(page);
     const link = page
       .getByRole("dialog", { name: "Menu" })
-      .getByRole("link", { name: "Certifications", exact: true });
-    await expect(link).toHaveAttribute("href", "/certifications/");
+      .getByRole("link", { name: "Certs", exact: true });
+    await expect(link).toHaveAttribute("href", "/#certifications");
     // 44px target; the sheet may still be easing in, which leaves a fraction of a pixel of float error.
     expect((await link.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(43.9);
     await link.click();
-    await expect(page).toHaveURL(/\/certifications\/$/);
+    await expect(page).toHaveURL(/\/#certifications$/);
   });
 });
 
@@ -478,20 +438,19 @@ test.describe("with JavaScript", () => {
     page,
     isMobile,
   }) => {
-    await page.goto("/about/");
+    await page.goto("/privacy/");
     await expect(page.locator("html")).toHaveClass(/(^|\s)js(\s|$)/);
     if (isMobile)
       await expect(page.getByRole("button", { name: "Menu", exact: true })).toBeVisible();
     else {
       await expect(page.getByRole("button", { name: "Toggle theme" })).toBeVisible();
-      await expect(page.getByRole("button", { name: "ENGINEER" })).toBeVisible();
     }
     // The <noscript> row is not part of the page when scripts run.
     await expect(page.locator("header noscript nav")).toHaveCount(0);
   });
 
   test("the server HTML ships without the js class", () => {
-    for (const file of ["index.html", "about/index.html", "404.html"]) {
+    for (const file of ["index.html", "privacy/index.html", "404.html"]) {
       const tag = /<html\b[^>]*>/.exec(readOut(file))?.[0] ?? "";
       expect(tag, file).toContain("<html");
       const classes = /\bclass="([^"]*)"/.exec(tag)?.[1]?.split(/\s+/) ?? [];
@@ -520,23 +479,32 @@ test.describe("without JavaScript (UX-14)", () => {
 
   test("a phone still has the primary navigation, and no dead MENU button", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
-    await page.goto("/about/", { waitUntil: "load" });
+    await page.goto("/privacy/", { waitUntil: "load" });
     await expect(page.locator("html")).not.toHaveClass(/(^|\s)js(\s|$)/);
     const nav = page.getByRole("navigation", { name: "Primary" });
     await expect(nav).toBeVisible();
-    for (const label of ["WORK", "SYSTEMS", "RESEARCH", "WRITING", "ABOUT", "RESUME"]) {
+    for (const label of [
+      "ABOUT",
+      "WORK",
+      "SYSTEMS",
+      "RESEARCH",
+      "CERTS",
+      "WRITING",
+      "CONTACT",
+      "RESUME",
+    ]) {
       await expect(nav.getByRole("link", { name: label, exact: true })).toBeVisible();
     }
-    await expect(nav.getByRole("link", { name: "ABOUT" })).toHaveAttribute("aria-current", "page");
+    await expect(nav.getByRole("link", { name: "ABOUT" })).not.toHaveAttribute("aria-current", /.+/);
     expect(await visibleButtons(page)).toEqual([]);
 
     await nav.getByRole("link", { name: "SYSTEMS", exact: true }).click();
-    await expect(page).toHaveURL(/\/systems\/$/);
+    await expect(page).toHaveURL(/\/#systems$/);
   });
 
   test("the no-JS row fits at 320px and the header is not pinned", async ({ page }) => {
     await page.setViewportSize({ width: 320, height: 640 });
-    await page.goto("/about/", { waitUntil: "load" });
+    await page.goto("/privacy/", { waitUntil: "load" });
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
       320,
     );
@@ -551,7 +519,7 @@ test.describe("without JavaScript (UX-14)", () => {
 
   test("a desktop shows no inert toggle, theme, palette or terminal buttons", async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
-    await page.goto("/about/", { waitUntil: "load" });
+    await page.goto("/privacy/", { waitUntil: "load" });
     expect(await visibleButtons(page)).toEqual([]);
     await expect(
       page.locator("header").getByRole("link", { name: "Resume", exact: true }),
@@ -563,14 +531,13 @@ test.describe("without JavaScript (UX-14)", () => {
   });
 });
 
-test.describe("mobile menu hands over to the palette and terminal (CODE-01)", () => {
+test.describe("mobile menu hands over to the terminal (CODE-01)", () => {
   async function press(page: Page, locator: Locator, isMobile: boolean) {
     if (isMobile) await locator.tap();
     else await locator.click();
   }
 
   for (const [label, dialogName, focusTarget] of [
-    ["Search", "Command palette", { role: "combobox", name: "Search the portfolio" }],
     ["Terminal", "Terminal", { role: "textbox", name: "Terminal command" }],
   ] as const) {
     test(`MENU, ${label} opens the ${dialogName} and Esc returns focus to MENU`, async ({
@@ -578,7 +545,7 @@ test.describe("mobile menu hands over to the palette and terminal (CODE-01)", ()
       isMobile,
     }) => {
       test.skip(!isMobile, "the tablet-width variant below runs in the desktop project");
-      await page.goto("/about/");
+      await page.goto("/privacy/");
       await waitForHydration(page);
       const menu = page.getByRole("button", { name: "Menu", exact: true });
       await press(page, menu, true);
@@ -601,12 +568,11 @@ test.describe("mobile menu hands over to the palette and terminal (CODE-01)", ()
     test.use({ viewport: { width: 820, height: 1000 } });
 
     for (const [label, dialogName] of [
-      ["Search", "Command palette"],
       ["Terminal", "Terminal"],
     ] as const) {
       test(`MENU, ${label} opens the ${dialogName}`, async ({ page, isMobile }) => {
         test.skip(isMobile, "covered by the touch variant above");
-        await page.goto("/about/");
+        await page.goto("/privacy/");
         await waitForHydration(page);
         await page.getByRole("button", { name: "Menu", exact: true }).click();
         const sheet = page.getByRole("dialog", { name: "Menu" });
@@ -622,12 +588,11 @@ test.describe("mobile menu hands over to the palette and terminal (CODE-01)", ()
     test.use({ reducedMotion: "reduce", viewport: { width: 820, height: 1000 } });
 
     for (const [label, dialogName] of [
-      ["Search", "Command palette"],
       ["Terminal", "Terminal"],
     ] as const) {
       test(`MENU, ${label} opens the ${dialogName}`, async ({ page, isMobile }) => {
         test.skip(isMobile, "the viewport override is for the desktop project");
-        await page.goto("/about/");
+        await page.goto("/privacy/");
         await waitForHydration(page);
         const menu = page.getByRole("button", { name: "Menu", exact: true });
         await menu.click();
@@ -644,12 +609,12 @@ test.describe("mobile menu hands over to the palette and terminal (CODE-01)", ()
     }
   });
 
-  test("a link in the menu still closes it and leaves focus in the new page", async ({
+  test("a link in the menu still closes it and lands on the section", async ({
     page,
     isMobile,
   }) => {
     test.skip(!isMobile, "the menu button only exists below the desktop breakpoint");
-    await page.goto("/about/");
+    await page.goto("/privacy/");
     await waitForHydration(page);
     await press(page, page.getByRole("button", { name: "Menu", exact: true }), true);
     await press(
@@ -659,9 +624,11 @@ test.describe("mobile menu hands over to the palette and terminal (CODE-01)", ()
         .getByRole("link", { name: "Research", exact: true }),
       true,
     );
-    await expect(page).toHaveURL(/\/research\/$/);
+    await expect(page).toHaveURL(/\/#research$/);
     await expect(page.getByRole("dialog", { name: "Menu" })).toBeHidden();
-    await expect(page.locator("main#main")).toBeFocused();
+    await expect(page.locator("#research")).toBeInViewport();
+    // Focus does not jump back to the MENU button that opened the sheet.
+    await expect(page.getByRole("button", { name: "Menu", exact: true })).not.toBeFocused();
   });
 
   test("Esc on the menu still returns focus to MENU and opens nothing", async ({
@@ -669,20 +636,19 @@ test.describe("mobile menu hands over to the palette and terminal (CODE-01)", ()
     isMobile,
   }) => {
     test.skip(!isMobile, "the menu button only exists below the desktop breakpoint");
-    await page.goto("/about/");
+    await page.goto("/privacy/");
     await waitForHydration(page);
     const menu = page.getByRole("button", { name: "Menu", exact: true });
     await press(page, menu, true);
     await expect(page.getByRole("dialog", { name: "Menu" })).toBeVisible();
     await closeMenu(page);
     await expect(menu).toBeFocused();
-    await expect(page.getByRole("dialog", { name: PALETTE.name })).toBeHidden();
   });
 });
 
 test.describe("theme switch (perf-6)", () => {
   test("transitions are off while the theme repaints and come back after", async ({ page }) => {
-    await page.goto("/about/");
+    await page.goto("/privacy/");
     await waitForHydration(page);
     const opened = await openMenuIfPresent(page);
     const toggle = page.getByRole("button", { name: "Toggle theme" });
@@ -697,7 +663,7 @@ test.describe("theme switch (perf-6)", () => {
   });
 
   test("no transition runs for any element while the attribute is set", async ({ page }) => {
-    await page.goto("/about/");
+    await page.goto("/privacy/");
     const durations = await page.evaluate(() => {
       document.documentElement.setAttribute("data-theme-switching", "");
       const seen = new Set<string>();
@@ -733,7 +699,7 @@ test.describe("icons (D2, SEO-7)", () => {
   });
 
   test("the head points at the root favicon first, then the PNGs", async ({ page }) => {
-    await page.goto("/about/");
+    await page.goto("/privacy/");
     const hrefs = await page
       .locator('link[rel="icon"]')
       .evaluateAll((links) => links.map((l) => l.getAttribute("href")));
@@ -747,10 +713,10 @@ test.describe("icons (D2, SEO-7)", () => {
     );
   });
 
-  test("every icon has its size and the DS / HELIOS colours, not the old amber tile", async ({
+  test("every icon has its size and the DS / TRACE colours, not the old amber tile", async ({
     page,
   }) => {
-    await page.goto("/about/");
+    await page.goto("/privacy/");
     const icons = [
       ["/favicon_io/favicon-16x16.png", 16],
       ["/favicon_io/favicon-32x32.png", 32],
@@ -809,7 +775,7 @@ test.describe("icons (D2, SEO-7)", () => {
 
 test.describe("section counter contract (UX-15)", () => {
   test(".ds-section increments inside #main and .ds-section-number prints it", async ({ page }) => {
-    await page.goto("/about/");
+    await page.goto("/privacy/");
     const stylesheets = await page.evaluate(() =>
       [...document.styleSheets].flatMap((sheet) => (sheet.href ? [sheet.href] : [])),
     );
@@ -860,7 +826,7 @@ test.describe("section counter contract (UX-15)", () => {
 
 test.describe("font files (perf-2)", () => {
   test("only the two Latin subsets are preloaded, each well under the full 70 KB file", () => {
-    for (const file of ["index.html", "resume/index.html", "systems/index.html"]) {
+    for (const file of ["index.html", "resume/index.html", "privacy/index.html"]) {
       const html = readOut(file);
       const preloads = [...html.matchAll(/<link[^>]*rel="preload"[^>]*as="font"[^>]*>/g)].flatMap(
         (match) => /href="([^"]+)"/.exec(match[0])?.[1] ?? [],
@@ -890,7 +856,7 @@ test.describe("font files (perf-2)", () => {
   });
 
   test("text uses Geist once the files are in, and its glyphs are all there", async ({ page }) => {
-    await page.goto("/about/");
+    await page.goto("/privacy/");
     await page.evaluate(() => document.fonts.ready);
     const loaded = await page.evaluate(() =>
       [...document.fonts]

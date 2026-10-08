@@ -1,5 +1,5 @@
 /**
- * Small, dependency-free fuzzy scorer shared by the command palette and the terminal.
+ * Small, dependency-free fuzzy scorer used by the terminal.
  *
  * Match tiers, strictly ordered (a higher tier always beats a lower one for the same field):
  *   exact (1000) > prefix (800-899) > word start (600-699) > substring (400-499) > subsequence (1-399)

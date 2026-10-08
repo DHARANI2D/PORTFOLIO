@@ -14,10 +14,10 @@ const STATEMENT =
 
 /** Career chain. Each caption restates a line of the verified experience or system descriptions. */
 const CHAIN = [
-  { label: "SOC", caption: "100+ alerts triaged daily in an enterprise SOC." },
+  { label: "SOC", caption: "Alert triage and incident response in an enterprise SOC." },
   { label: "DETECTION", caption: "SIEM correlation rules, mapped to MITRE ATT&CK." },
   { label: "CLOUD", caption: "Misconfigurations remediated across AWS and Azure." },
-  { label: "AI SECURITY", caption: "Controls for autonomous agents, in WITNESS and AEGIS." },
+  { label: "AI SECURITY", caption: "Controls for autonomous agents, in WITNESS." },
   {
     label: "AUTOMATION",
     caption: "Python workflows and AI-driven anomaly detection for alert prioritization.",
@@ -29,7 +29,7 @@ const THEMES = [
     label: "DEFEND",
     text: "Triage, incident response and SIEM correlation in an enterprise SOC.",
     keywords: "SOC · IR · Detection · SIEM / SOAR · Cloud",
-    href: "/experience/",
+    href: "/#experience",
     cta: "VIEW EXPERIENCE",
     delay: 0,
   },
@@ -37,7 +37,7 @@ const THEMES = [
     label: "BUILD",
     text: "Detection, correlation and AI security systems, built from first principles.",
     keywords: "Python · Pipelines · Automation",
-    href: "/systems/",
+    href: "/#systems",
     cta: "VIEW SYSTEMS",
     delay: 1,
   },
@@ -45,7 +45,7 @@ const THEMES = [
     label: "RESEARCH",
     text: "AI security, autonomous agents and trustworthy AI remediation.",
     keywords: "AI security · Agentic security · AI DFIR",
-    href: "/research/",
+    href: "/#research",
     cta: "VIEW RESEARCH",
     delay: 2,
   },
@@ -70,11 +70,11 @@ const STAGGER = [
 export function SignalSection() {
   return (
     <Section id="signal" autoNumber label="SIGNAL" title="From alerts to systems.">
-      <p className="max-w-3xl text-2xl leading-snug font-medium tracking-tight md:text-3xl">
+      <p className="max-w-3xl text-xl leading-snug font-medium tracking-tight text-foreground/90 md:text-2xl">
         {STATEMENT}
       </p>
 
-      <ol aria-label="Career signal chain" className="mt-16 grid lg:grid-cols-5">
+      <ol aria-label="Career signal chain" className="mt-10 grid rounded-xl border bg-surface p-6 lg:grid-cols-5 lg:px-8 lg:pb-8">
         {CHAIN.map((step, index) => {
           const isLast = index === CHAIN.length - 1;
           const stagger = STAGGER[index] ?? "";
@@ -135,11 +135,11 @@ export function SignalSection() {
         })}
       </ol>
 
-      <div className="mt-24 grid gap-8 md:grid-cols-3 md:gap-6">
+      <div className="mt-10 grid gap-4 md:grid-cols-3">
         {THEMES.map((theme) => (
           <Reveal key={theme.label} delay={theme.delay}>
-            <div className="flex h-full flex-col border-t pt-6">
-              <h3 className="label-mono text-foreground">{theme.label}</h3>
+            <div className="flex h-full flex-col rounded-xl border bg-surface p-6 transition-colors hover:border-border-strong">
+              <h3 className="subhead text-foreground">{theme.label}</h3>
               <p className="mt-4 text-base text-muted">{theme.text}</p>
               <p className="mt-4 label-mono text-muted">{theme.keywords}</p>
               <Link

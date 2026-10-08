@@ -2,10 +2,10 @@
 
 The portfolio of a security engineer. It is a static site: HTML, CSS and a small amount of JavaScript, no server, no database, no third-party scripts.
 
-The design brief was "a quiet security engineering lab". Minimal at first glance, deep when explored: case studies with architecture diagrams and threat models, a command palette, a terminal, and a recruiter view that strips the page down to the summary.
+The design brief was "a quiet security engineering lab". Minimal at first glance, deep when explored: case studies with architecture diagrams and threat models, and a terminal in the hero that answers questions from the site's own content.
 
 - Identity, experience, systems, research, field notes, certifications, resume, contact, privacy.
-- Dark by default, light theme, **engineer** and **recruiter** views.
+- Dark by default, light theme.
 - WCAG 2.2 AA target, reduced-motion support, works without JavaScript for reading.
 - Hash-based Content-Security-Policy generated at build time, in the HTML of every page and in the response headers. See [Security posture](#security-posture).
 
@@ -66,14 +66,13 @@ app/              Routes (App Router). One folder per page, plus the metadata ro
 components/       Server components by default. "use client" only on small interactive leaves.
   ui/             Button, Tag, Dialog (Base UI), Section, Container, Label
   navigation/     Header, footer, theme and view toggles, mobile menu, logo
-  command/        Command palette
   terminal/       Terminal dialog (its data loads on first open)
   graph/          Ambient security graph and its activation state
   hero/ home/ systems/ research/ writing/ skills/ career/ about/ contact/ resume/ certifications/
 content/          Typed content: projects/, research/, experience, skills, certifications,
                   earlier-work, and writing/*.mdx
 lib/              content.ts (validated accessors), site.ts, seo.ts, preferences.ts, writing.ts,
-                  search-index.ts, fuzzy.ts, terminal-commands.ts, github.ts, ui-events.ts
+                  assistant.ts, knowledge.ts, fuzzy.ts, terminal-commands.ts, github.ts, ui-events.ts
 scripts/          postbuild.mjs and lib/csp.mjs (CSP tag and headers, security.txt)
 tests/            unit/ (Vitest), e2e/ (Playwright, fixtures.ts, static-server.mjs, tsconfig.json)
 docs/             FACTS.md, VISION.md, ARCHITECTURE.md, SECURITY.md
@@ -94,7 +93,7 @@ Before adding anything, read [`docs/FACTS.md`](docs/FACTS.md). Section C lists w
 
 ### Add a project (system)
 
-1. Create `content/projects/<slug>.ts` exporting an object `satisfies ProjectInput` (see `content/projects/witness.ts` for a full flagship entry and `argus.ts` for a minimal one).
+1. Create `content/projects/<slug>.ts` exporting an object `satisfies ProjectInput` (see `content/projects/witness.ts` for a full flagship entry and `helios.ts` for a minimal one).
 2. Add it to `projectEntries` in `content/projects/index.ts`.
 
 Required fields: `slug`, `name`, `tier` (1 flagship, 2 major, 3 supporting), `category`, `domain`, `tagline`, `summary`, `flow` (at least two steps). Optional: `status` (only if the owner stated one), `overview`, `problem`, `stack`, `architecture`, `threatModel`, `decisions`, `security`, `links`, `graphNodes`.
@@ -134,20 +133,14 @@ Text. `<Callout>`, `<CodeBlock>`, `<Diagram>` and `<Figure>` are available witho
 
 Experience, skills, certifications and earlier work are single files in `content/`. Certifications are `verified`, `in-progress` or `planned`. A planned item never has a year or a link. Years are only stated where the owner has stated them.
 
-## View modes
+## Terminal and assistant
 
-The **VIEW AS** control switches between two presentations of the same HTML.
+The terminal sits inline in the hero and also opens as a dialog (header, mobile menu). It is one component, `components/terminal/terminal-surface.tsx`, and it doubles as the site's assistant.
 
-- **Engineer** (default) shows everything.
-- **Recruiter** hides detail blocks and shows a shorter summary.
-
-It is CSS only. `<html data-view="engineer|recruiter">` is set before first paint from `localStorage`, and the rules in `app/globals.css` hide `[data-engineer-only]` in recruiter view and `[data-recruiter-only]` in engineer view. To make a block engineer-only, add the `data-engineer-only` attribute to its wrapper. The choice is stored in `localStorage` under `ds-view`; the theme under `ds-theme`. Nothing is sent anywhere.
-
-## Command palette and terminal
-
-- **Command palette**: `Ctrl+K` or `⌘K`. Searches pages, systems, research, notes, skills, experience, links and actions. The index is built at export time from the content accessors, so new content is searchable immediately.
-- **Go-to keys**: press `g`, then `h` home, `s` systems, `e` experience, `r` research, `w` writing, `a` about, `c` contact. They can be turned off in the palette footer (WCAG 2.1.4).
-- **Terminal**: open it from the header, the mobile menu or the palette (`Open terminal`). Commands: `help`, `about`, `experience`, `projects`, `skills`, `research`, `certifications`, `contact`, `resume`, `status`, `theme`, `view`, `open <slug>`, `matrix`, `clear`. Output comes from the same content, and `status` numbers are computed from it, never typed in. Input is not sent anywhere.
+- **Commands**: `help`, `about`, `experience`, `projects`, `skills`, `research`, `certifications`, `contact`, `resume`, `status`, `theme`, `open <slug>`, `matrix`, `ask <question>`, `clear`. Output comes from the content, and `status` numbers are computed from it, never typed in.
+- **Questions**: anything that is not a command is a question. It is answered by `lib/assistant.ts`, which matches the question against `/knowledge.json`, a file built at export time from the content (`lib/knowledge.ts`), and prints the most relevant sentences with a command that opens the page. It is retrieval over the site's own content, not a language model: it can only say what the site says, and it says so when it finds nothing.
+- **Privacy**: the knowledge file is a same-origin static file, fetched on the first question. Nothing a visitor types is sent anywhere.
+- There is no command palette and no `Ctrl+K` shortcut.
 
 ## Accessibility and performance
 
@@ -159,7 +152,7 @@ Targets, checked in CI where they can be, otherwise by hand:
 - **Core Web Vitals "good" thresholds** as the performance target: LCP under 2.5 s, CLS under 0.1, INP under 200 ms. These are targets, not measurements: nothing in this repository measures them yet. Measure a deployed build with Lighthouse or WebPageTest before claiming a number.
 - Performance approach: server components by default, small client leaves, the terminal and its data load on first use, no layout shift (reserved space), no third-party requests.
 
-Automated checks find only part of the accessibility problems. Before a release, also tab through every page, try a screen reader on the palette and the terminal, and zoom to 400%.
+Automated checks find only part of the accessibility problems. Before a release, also tab through every page, try a screen reader on the terminal, and zoom to 400%.
 
 ## Security posture
 
@@ -234,13 +227,13 @@ Playwright runs against `out/` through `tests/e2e/static-server.mjs`, which serv
 | Spec                     | Covers                                                                                                                                                                                                  |
 | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `routes.spec.ts`         | Every URL in `sitemap.xml` returns 200, has one `h1` and `main#main`, no console errors, no failed requests; 404 page                                                                                   |
-| `a11y.spec.ts`           | axe-core WCAG 2.2 AA on key routes in dark, light and recruiter view, and on the palette, terminal and menu                                                                                             |
-| `interactions.spec.ts`   | Palette (`Ctrl+K`, search, Enter), go-to keys, terminal, theme and view persistence, mobile menu focus                                                                                                  |
+| `a11y.spec.ts`           | axe-core WCAG 2.2 AA on key routes in dark and light, and on the terminal and menu                                                                                             |
+| `interactions.spec.ts`   | Terminal, header section links, theme persistence, mobile menu focus                                                                                                  |
 | `responsive.spec.ts`     | No horizontal overflow or clipped content at 320, 375, 768 and 1280px; 44px touch targets                                                                                                               |
 | `reduced-motion.spec.ts` | No running animations, all content opaque, final state without JavaScript                                                                                                                               |
 | `security.spec.ts`       | Only allowed inline scripts, same-origin resources only, `rel="noopener"`, `_headers` and `security.txt`                                                                                                |
 | `seo.spec.ts`            | Canonical equals sitemap URL, Open Graph image resolves to a PNG, JSON-LD parses, manifest and robots                                                                                                   |
-| `platform-fixes.spec.ts` | Policy tag first in `<head>` of every HTML file, no violation on any route in both themes after palette, terminal, toggles and diagram hover, the tag alone enforcing the policy when no header is sent |
+| `platform-fixes.spec.ts` | Policy tag first in `<head>` of every HTML file, no violation on any route in both themes after the terminal, toggles and diagram hover, the tag alone enforcing the policy when no header is sent |
 
 Projects: `desktop` (1440x900), `mobile` (Pixel 5) and `reduced-motion`.
 

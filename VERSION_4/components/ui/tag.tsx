@@ -17,7 +17,7 @@ export function Tag({ active = false, className, ...props }: TagProps) {
     <span
       data-active={active ? "" : undefined}
       className={cn(
-        "inline-flex items-center gap-2 rounded-sm border px-2 py-1 font-mono text-[0.6875rem] leading-none tracking-[0.1em] whitespace-nowrap uppercase transition-colors duration-200 motion-reduce:transition-none",
+        "inline-flex items-center gap-2 rounded-md border bg-surface/60 px-2 py-1 font-mono text-[0.6875rem] leading-none tracking-[0.1em] whitespace-nowrap uppercase transition-colors duration-200 motion-reduce:transition-none",
         active ? "border-accent bg-accent-soft text-foreground" : "border-border text-muted",
         className,
       )}

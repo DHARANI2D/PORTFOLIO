@@ -43,26 +43,12 @@ async function seedTheme(page: Page, theme: Theme) {
   );
 }
 
-test.describe("avatar (perf-3, D11)", () => {
-  test("is a small WebP with real dimensions, in a bordered frame, and the PNG is gone", async ({
-    page,
-  }) => {
-    expect(fs.existsSync(path.join(OUT_DIR, "helios-avatar.png"))).toBe(false);
-    const size = fs.statSync(path.join(OUT_DIR, "helios-avatar.webp")).size;
-    expect(size).toBeLessThan(30 * 1024);
-
-    await page.goto("/about/");
-    const img = page.getByRole("img", { name: /Illustrated portrait/ });
-    await expect(img).toHaveAttribute("src", "/helios-avatar.webp");
-    await expect(img).toHaveAttribute("width", "320");
-    await expect(img).toHaveAttribute("height", "395");
-    expect(await img.evaluate((el: HTMLImageElement) => el.complete && el.naturalWidth)).toBe(320);
-    const frame = await img.evaluate((el) => {
-      const style = getComputedStyle(el.parentElement as HTMLElement);
-      return { width: style.borderTopWidth, radius: style.borderTopLeftRadius };
-    });
-    expect(frame.width).toBe("1px");
-    expect(parseFloat(frame.radius)).toBeGreaterThan(0);
+test.describe("no portrait", () => {
+  test("the portrait file is gone and the About section shows no image", async ({ page }) => {
+    expect(fs.existsSync(path.join(OUT_DIR, "helios-avatar.webp"))).toBe(false);
+    await page.goto("/");
+    await expect(page.getByRole("img", { name: /portrait/i })).toHaveCount(0);
+    await expect(page.locator("#about img")).toHaveCount(0);
   });
 });
 
@@ -70,7 +56,7 @@ test.describe("contact (D6, D13, UX-16)", () => {
   for (const theme of ["dark", "light"] as const) {
     test(`field borders are at least 3:1 against field and card (${theme})`, async ({ page }) => {
       await seedTheme(page, theme);
-      await page.goto("/contact/");
+      await page.goto("/");
       for (const selector of ['input[name="name"]', 'input[name="email"]', "select", "textarea"]) {
         const field = page.locator(`form ${selector}`).first();
         const colours = await field.evaluate((el) => {
@@ -92,7 +78,7 @@ test.describe("contact (D6, D13, UX-16)", () => {
   for (const width of [320, 390, 1440]) {
     test(`LinkedIn row stays on one line at ${width}px`, async ({ page }) => {
       await page.setViewportSize({ width, height: 900 });
-      await page.goto("/contact/");
+      await page.goto("/");
       const value = page.getByRole("link", { name: /LINKEDIN/ }).locator("span.font-mono");
       const lines = await value.evaluate((el) => {
         const lineHeight = parseFloat(getComputedStyle(el).lineHeight);
@@ -106,7 +92,7 @@ test.describe("contact (D6, D13, UX-16)", () => {
   test("a message whose encoded mailto is too long is not opened and shows the email", async ({
     page,
   }) => {
-    await page.goto("/contact/");
+    await page.goto("/");
     await page.evaluate(() => {
       (window as unknown as { __opened?: string }).__opened = "";
     });
@@ -127,7 +113,7 @@ test.describe("contact (D6, D13, UX-16)", () => {
 
 test.describe("certifications wording (F10)", () => {
   test("the intro is exactly true and the group is called EARNED", async ({ page }) => {
-    await page.goto("/certifications/");
+    await page.goto("/");
     await expect(
       page.getByText("Where a public verification page exists, the credential links to it."),
     ).toBeVisible();
@@ -174,16 +160,24 @@ test.describe("internal links (SEO-2, UX-07)", () => {
     await expect(page.locator("main a[href='/systems/signalfusion-core/']").first()).toBeVisible();
   });
 
-  for (const route of ["/about/", "/experience/", "/resume/"]) {
-    test(`${route} links to /contact/`, async ({ page }) => {
+  for (const route of ["/", "/resume/"]) {
+    test(`${route} links to the contact section`, async ({ page }) => {
       await page.goto(route);
-      await expect(page.locator("main a[href='/contact/']").first()).toBeAttached();
+      await expect(page.locator("main a[href='/#contact']").first()).toBeAttached();
     });
   }
 });
 
 test.describe("research meta descriptions (SEO-3)", () => {
-  for (const slug of ["witness", "securemodelgate", "ai-dfir", "agentic-security"]) {
+  for (const slug of [
+    "witness",
+    "securemodelgate",
+    "maestro",
+    "memforensix",
+    "silentstorm",
+    "ai-dfir",
+    "agentic-security",
+  ]) {
     test(`/research/${slug}/ description is a complete sentence within 160 characters`, async ({
       page,
     }) => {

@@ -53,7 +53,7 @@ export default function ResumePage() {
 
       <section
         aria-label="Resume preview"
-        className="border-t py-16 md:py-24 print:border-0 print:py-0"
+        className="border-t py-12 md:py-16 print:border-0 print:py-0"
       >
         <Container className="print:max-w-none print:px-0">
           <ResumePreview />

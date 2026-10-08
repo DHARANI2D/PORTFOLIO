@@ -2,7 +2,7 @@ export type EarlierWorkEntry = { name: string; note?: string; url?: string };
 
 /**
  * Academic and supporting work. Source: docs/FACTS.md section A. The last five entries are named
- * only. No description is known, so none is written.
+ * only. EtherGuard is the B.E. final-year project; its technique and results are not stated here. No description is known, so none is written.
  */
 export const earlierWork: EarlierWorkEntry[] = [
   {
@@ -28,6 +28,10 @@ export const earlierWork: EarlierWorkEntry[] = [
   {
     name: "Sentinel AI",
     note: "Node.js, TypeScript, React. Detects phishing, scams and malicious URLs by combining rule-based detection with LLM-driven reasoning. Real-time threat monitoring.",
+  },
+  {
+    name: "EtherGuard",
+    note: "Solidity smart-contract vulnerability scanner. The B.E. final-year project.",
   },
   { name: "Health Predictor" },
   { name: "Grade Predictor" },

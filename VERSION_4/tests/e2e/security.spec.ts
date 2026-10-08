@@ -98,7 +98,7 @@ const isAllowed = (script: string) =>
 test.describe("built pages", () => {
   test("the export contains pages", () => {
     expect(pages.length).toBeGreaterThan(5);
-    expect(pages.map((p) => p.path)).toEqual(expect.arrayContaining(["/", "/about/", "/404.html"]));
+    expect(pages.map((p) => p.path)).toEqual(expect.arrayContaining(["/", "/privacy/", "/404.html"]));
   });
 
   for (const page of pages) {

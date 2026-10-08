@@ -1,7 +1,7 @@
 import { spawn, type ChildProcess } from "node:child_process";
 import path from "node:path";
 import { UI_EVENTS } from "../../lib/ui-events";
-import { THEME_KEY, VIEW_KEY } from "../../lib/preferences";
+import { THEME_KEY } from "../../lib/preferences";
 import { OUT_DIR, readOut, sitemapPaths, walkOut } from "./built-site";
 import { expect, test } from "./fixtures";
 import { closeMenu, openMenuIfPresent, waitForHydration, watchProblems } from "./helpers";
@@ -56,15 +56,14 @@ test.describe("no policy violation on any route, in both themes, after interacti
       test(`${route} (${theme})`, async ({ page, isMobile }) => {
         test.skip(isMobile && theme === "light" && route !== "/", "mobile: dark and home only");
         await page.addInitScript(
-          ([themeKey, viewKey, value]) => {
+          ([themeKey, value]) => {
             try {
               localStorage.setItem(themeKey, value);
-              localStorage.setItem(viewKey, "engineer");
             } catch {
               /* storage blocked */
             }
           },
-          [THEME_KEY, VIEW_KEY, theme] as const,
+          [THEME_KEY, theme] as const,
         );
         const problems = watchProblems(page);
         await page.goto(route, { waitUntil: "load" });
@@ -80,15 +79,7 @@ test.describe("no policy violation on any route, in both themes, after interacti
           window.scrollTo(0, 0);
         });
 
-        // Palette: open, type, close.
-        await page.keyboard.press("Control+k");
-        const palette = page.getByRole("dialog", { name: "Command palette" });
-        await expect(palette).toBeVisible();
-        await palette.getByRole("combobox").fill("witness");
-        await page.keyboard.press("Escape");
-        await expect(palette).toBeHidden();
-
-        // Terminal: open with a command, switch theme and view through it, close.
+        // Terminal: open with a command, switch theme through it, close.
         await page.evaluate(
           (name) => window.dispatchEvent(new CustomEvent(name, { detail: { command: "status" } })),
           UI_EVENTS.openTerminal,
@@ -98,8 +89,6 @@ test.describe("no policy violation on any route, in both themes, after interacti
         const input = terminal.getByRole("textbox", { name: "Terminal command" });
         for (const command of [
           "help",
-          "view recruiter",
-          "view engineer",
           "theme dark",
           `theme ${theme}`,
         ]) {
@@ -125,7 +114,7 @@ test.describe("no policy violation on any route, in both themes, after interacti
   }
 });
 
-test.describe("opening the terminal and the palette", () => {
+test.describe("opening the terminal", () => {
   test("causes no CSP violation (the terminal used to probe eval)", async ({
     page,
     cspViolations,
@@ -141,8 +130,6 @@ test.describe("opening the terminal and the palette", () => {
     await expect(terminal.getByRole("log")).toContainText("COMMANDS");
     await page.keyboard.press("Escape");
     await expect(terminal).toBeHidden();
-    await page.keyboard.press("Control+k");
-    await expect(page.getByRole("dialog", { name: "Command palette" })).toBeVisible();
     await page.waitForTimeout(300);
     expect(cspViolations).toEqual([]);
   });
